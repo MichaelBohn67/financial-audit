@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
+import java.time.LocalDate;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
@@ -23,6 +25,9 @@ class AccountRepositoryTest {
         accountHolder.setFirstName("Erika");
         accountHolder.setLastName("Musterfrau");
         accountHolder.setCustomerNumber("CUST-2001");
+        accountHolder.setBirthdate(LocalDate.of(1985, 9, 14));
+        accountHolder.setTin("TIN-2001");
+        accountHolder.setCompany(false);
         accountHolder = accountHolderRepository.save(accountHolder);
 
         Account account = new Account();

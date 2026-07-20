@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Booking Form</title>
+</head>
+<body>
+    <h1 th:text="${booking.id == null ? 'Add Booking' : 'Edit Booking'}">Booking Form</h1>
+    <form th:action="@{/bookings}" th:object="${booking}" method="post">
+        <input type="hidden" th:field="*{id}" />
+        <div>
+            <label>Description:</label>
+            <input type="text" th:field="*{description}" />
+        </div>
+        <div>
+            <label>Amount:</label>
+            <input type="number" step="0.01" th:field="*{amount}" />
+        </div>
+        <div>
+            <label>Currency:</label>
+            <input type="text" th:field="*{currency}" />
+        </div>
+        <div>
+            <label>Source Account:</label>
+            <input type="text" th:field="*{sourceAccount}" />
+        </div>
+        <div>
+            <label>Destination Account:</label>
+            <input type="text" th:field="*{destinationAccount}" />
+        </div>
+        <button type="submit">Save</button>
+    </form>
+    <a th:href="@{/bookings}">Back to List</a>
+</body>
+</html>

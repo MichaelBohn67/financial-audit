@@ -32,6 +32,9 @@ public class AccountHolder {
     @Column(nullable = false)
     private boolean company;
 
+    @Column(nullable = false)
+    private String nationality;
+
     @OneToMany(mappedBy = "accountHolder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Address> addresses = new ArrayList<>();
 
@@ -97,6 +100,14 @@ public class AccountHolder {
 
     public void setCompany(boolean company) {
         this.company = company;
+    }
+
+    public String getNationality() {
+        return nationality;
+    }
+
+    public void setNationality(String nationality) {
+        this.nationality = nationality;
     }
 
     public List<Address> getAddresses() {

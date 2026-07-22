@@ -5,13 +5,14 @@ sessionId: session-260721-112155-13gg
 # Requirements
 
 ### Overview & Goals
-Implement **Phase 3 first** from your roadmap: expand AML detection beyond the existing high-amount check and add deterministic risk scoring so suspicious bookings can be persisted as actionable findings.
+Implement **Phase 3 first** from your roadmap: expand AML detection beyond the existing high-amount check, add deterministic risk scoring, and define a complete AI rules file in `.junie/rules.md` so implementation stays consistent and faster across all AML changes.
 
 ### Scope
 **In Scope**
 - Add multiple AML rules in the current `domain.model` style (`AmlRule` + `AmlEngine`).
 - Introduce a risk scoring component that maps rule hits to `LOW/MEDIUM/HIGH`.
 - Persist generated alerts as `Finding` records via existing `FindingRepository`.
+- Populate `.junie/rules.md` with all AI working rules needed for this phase: clean code formatting, naming, comments, planning/implementation guardrails, and testing conventions.
 - Keep behavior test-driven in line with existing unit/integration test patterns.
 
 **Out of Scope**
@@ -28,6 +29,14 @@ Implement **Phase 3 first** from your roadmap: expand AML detection beyond the e
   - default `status=NEW` via entity lifecycle (already present in `Finding`).
 - Risk level assignment must be reproducible (same input => same output).
 - Existing high-amount behavior remains backward compatible.
+- `.junie/rules.md` exists and is fully populated for this phase, including all rules needed by the AI agent:
+  - Java formatting/style conventions aligned to the current codebase,
+  - naming and package conventions for `domain`, `application`, `infrastructure`,
+  - comment policy (what to comment and what to avoid),
+  - guardrails for writing AML rules and tests consistently,
+  - testing conventions (JUnit 5 + AssertJ, clear scenario naming, deterministic assertions),
+  - risk/scoring implementation constraints (pure mapping rules, reproducible outputs),
+  - concise AI execution rules (scope discipline, deterministic behavior, and no unnecessary refactors).
 
 # Technical Design
 
@@ -55,6 +64,12 @@ Implement **Phase 3 first** from your roadmap: expand AML detection beyond the e
    - Service loads bookings (or processes one booking), runs AML engine, scores hits, persists `Finding` entries through `FindingRepository`.
 
 ### Proposed Changes
+- **AI rules file (for faster execution consistency)**
+  - Populate `.junie/rules.md` as the central rulebook used while implementing this phase.
+  - Add complete rule sections: code style/formatting, naming, comments, null-safety/validation, AML rule authoring pattern, scoring determinism, test structure, and refactor boundaries.
+  - Define "must" and "must not" rules so agent behavior is explicit and enforceable during implementation.
+  - Include examples based on existing files (`AmlEngine.java`, `HighAmountRule.java`, `AmlEngineTest.java`) so guidance matches current patterns.
+
 - **Domain additions**
   - Add new rule classes under `domain.model` (Phase-3 set):
     - `StructuringRule` (many sub-threshold transactions pattern)
@@ -89,7 +104,8 @@ Implement **Phase 3 first** from your roadmap: expand AML detection beyond the e
   - `src/main/java/de/bohnottensen/financialaudit/domain/model/AmlRule.java`
   - `src/main/java/de/bohnottensen/financialaudit/domain/model/AmlEngine.java`
   - `src/main/java/de/bohnottensen/financialaudit/domain/model/HighAmountRule.java`
-- **Add**
+- **Add/Modify**
+  - `.junie/rules.md`
   - `src/main/java/de/bohnottensen/financialaudit/domain/model/AmlAlert.java`
   - `src/main/java/de/bohnottensen/financialaudit/domain/model/StructuringRule.java`
   - `src/main/java/de/bohnottensen/financialaudit/domain/model/HighFrequencyRule.java`
@@ -102,6 +118,7 @@ Implement **Phase 3 first** from your roadmap: expand AML detection beyond the e
 - **Data sufficiency risk**: Some CSSF-inspired patterns need historical context; current booking-centric model may require repository queries for prior transactions.
 - **False positives**: Threshold-only logic can over-flag; mitigate by making thresholds configurable.
 - **Refactor impact**: Changing `AmlRule` return type affects existing tests; mitigate with staged migration and adapter compatibility during transition.
+- **Rules drift risk**: A rules file can become stale; mitigate by keeping rules narrowly scoped to Phase 3 and updating it when implementation decisions change.
 
 # Testing
 
@@ -122,25 +139,33 @@ Use the same style already present (`AmlEngineTest`, adapter tests, repository t
 
 # Delivery Steps
 
-###   Step 1: Refactor AML result contract and stabilize current rule pipeline
+###   Step 1: Populate `.junie/rules.md` with all AI rules needed for Phase 3
+A complete, structured rules file exists in `.junie/rules.md` and is ready to guide consistent implementation.
+- Add concrete conventions for Java formatting, naming, validation/null-safety, and test structure.
+- Define comment policy (intent/rationale comments only; avoid redundant narration).
+- Add explicit "must" / "must not" guardrails for AML rule implementations and deterministic risk scoring behavior.
+- Add AI execution guardrails: scope discipline, reuse of existing project patterns, and no opportunistic refactors.
+- Include short examples aligned with current code style from `AmlEngine`, `HighAmountRule`, and `AmlEngineTest`.
+
+###   Step 2: Refactor AML result contract and stabilize current rule pipeline
 AML rule execution produces typed alerts suitable for downstream scoring.
 - Introduce a domain alert object (e.g. `AmlAlert`) with explicit `ruleName` and `description`.
 - Update `AmlRule` and `AmlEngine` to operate on typed alerts instead of raw strings.
 - Adapt `HighAmountRule` and `AmlEngineTest` to the new contract while preserving existing detection semantics.
 
-###   Step 2: Implement Phase-3 rule set for pattern detection
+###   Step 3: Implement Phase-3 rule set for pattern detection
 The engine detects additional suspicious patterns beyond high amount.
 - Add `StructuringRule` for repeated sub-threshold/smurfing-like transfers using booking history inputs.
 - Add `HighFrequencyRule` for unusual burst activity in defined time windows.
 - Add/extend unit tests for each rule with positive and negative scenarios using project’s current JUnit + AssertJ style.
 
-###   Step 3: Add deterministic risk scoring and finding persistence orchestration
+###   Step 4: Add deterministic risk scoring and finding persistence orchestration
 AML alerts are transformed into persisted findings with risk levels.
 - Implement `RiskScoringEngine` to map alert/rule context to `LOW/MEDIUM/HIGH` consistently.
 - Add `AmlAuditService` that runs engine + scoring and creates `Finding` entities.
 - Persist through `FindingRepository` and verify end-to-end behavior with integration-level tests around booking-to-finding generation.
 
-###   Step 4: Wire Phase-3 flow into existing booking lifecycle
+###   Step 5: Wire Phase-3 flow into existing booking lifecycle
 New bookings can trigger AML analysis in the current application flow.
 - Integrate `AmlAuditService` at the existing booking entry point (current `BookingWebController` flow or adjacent service layer if introduced).
 - Ensure transaction timestamp defaults and validation behavior remain intact with AML processing added.

@@ -28,6 +28,7 @@ class AccountRepositoryTest {
         accountHolder.setBirthdate(LocalDate.of(1985, 9, 14));
         accountHolder.setTin("TIN-2001");
         accountHolder.setCompany(false);
+        accountHolder.setNationality("DE");
         accountHolder = accountHolderRepository.save(accountHolder);
 
         Account account = new Account();

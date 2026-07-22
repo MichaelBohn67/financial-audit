@@ -24,6 +24,7 @@ class AccountHolderRepositoryTest {
         accountHolder.setBirthdate(LocalDate.of(1990, 5, 20));
         accountHolder.setTin("TIN-1001");
         accountHolder.setCompany(false);
+        accountHolder.setNationality("DE");
 
         AccountHolder savedAccountHolder = accountHolderRepository.save(accountHolder);
 

@@ -28,6 +28,7 @@ class AddressRepositoryTest {
         accountHolder.setBirthdate(LocalDate.of(1992, 2, 12));
         accountHolder.setTin("TIN-3001");
         accountHolder.setCompany(false);
+        accountHolder.setNationality("DE");
         accountHolder = accountHolderRepository.save(accountHolder);
 
         Address oldAddress = new Address();

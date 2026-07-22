@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-addresses-table
+      author: junie
+      changes:
+        - createTable:
+            tableName: addresses
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_addresses
+              - column:
+                  name: account_holder_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: street
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: postal_code
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: city
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: country
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: valid_from
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: valid_to
+                  type: DATE
+        - addForeignKeyConstraint:
+            baseTableName: addresses
+            baseColumnNames: account_holder_id
+            referencedTableName: account_holders
+            referencedColumnNames: id
+            constraintName: fk_addresses_on_account_holder

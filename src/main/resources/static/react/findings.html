@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Findings View</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+<p><a href="index.html">Back to all views</a></p>
+<div id="root"></div>
+<script src="model-view.js"></script>
+<script>
+    mountDomainModelView({
+        title: "Findings",
+        endpoint: "/api/findings",
+        columns: [
+            { key: "id", label: "ID" },
+            { key: "bookingId", label: "Booking ID" },
+            { key: "ruleName", label: "Rule Name" },
+            { key: "alertDescription", label: "Alert Description" },
+            { key: "riskLevel", label: "Risk Level" },
+            { key: "status", label: "Status" },
+            { key: "auditorComment", label: "Auditor Comment" },
+            { key: "createdAt", label: "Created At" }
+        ]
+    });
+</script>
+</body>
+</html>

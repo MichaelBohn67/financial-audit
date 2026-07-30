@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-add-foreign-transaction-id-to-bookings
+      author: junie
+      changes:
+        - addColumn:
+            tableName: bookings
+            columns:
+              - column:
+                  name: foreign_transaction_id
+                  type: BIGINT
+        - addUniqueConstraint:
+            tableName: bookings
+            columnNames: foreign_transaction_id
+            constraintName: uq_bookings_foreign_transaction_id

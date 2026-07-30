@@ -9,3 +9,5 @@ databaseChangeLog:
       file: db/changelog/changes/004-create-addresses-table.yaml
   - include:
       file: db/changelog/changes/005-create-findings-table.yaml
+  - include:
+      file: db/changelog/changes/006-add-foreign-transaction-id-to-bookings.yaml

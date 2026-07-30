@@ -12,6 +12,9 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
+    private Long foreignTransactionId;
+
     @Column(nullable = false)
     private String description;
 
@@ -44,6 +47,14 @@ public class Booking {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getForeignTransactionId() {
+        return foreignTransactionId;
+    }
+
+    public void setForeignTransactionId(Long foreignTransactionId) {
+        this.foreignTransactionId = foreignTransactionId;
     }
 
     public String getDescription() {

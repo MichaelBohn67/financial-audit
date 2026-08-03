@@ -10,6 +10,7 @@ import org.springframework.web.client.RestClient;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 @Component
 public class OpenBankingApiClientAdapter implements TransactionSourcePort {
@@ -68,13 +69,21 @@ public class OpenBankingApiClientAdapter implements TransactionSourcePort {
     private Booking toBooking(OpenBankingTransactionResponse response) {
         Booking booking = new Booking();
         booking.setForeignTransactionId(response.transactionId());
-        booking.setDescription(response.description());
+        booking.setDescription(response.description() == null ? null : response.description().trim());
         booking.setAmount(response.amount());
-        booking.setCurrency(response.currency());
+        booking.setCurrency(normalizeCurrency(response.currency()));
         booking.setTransactionTimestamp(response.bookedAt());
-        booking.setSourceAccount(response.sourceAccountId());
-        booking.setDestinationAccount(response.destinationAccountId());
+        booking.setSourceAccount(normalizeAccount(response.sourceAccountId()));
+        booking.setDestinationAccount(normalizeAccount(response.destinationAccountId()));
         return booking;
+    }
+
+    private String normalizeCurrency(String currency) {
+        return currency == null ? null : currency.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String normalizeAccount(String accountId) {
+        return accountId == null ? null : accountId.trim().toUpperCase(Locale.ROOT);
     }
 
     record OpenBankingTransactionResponse(Long transactionId, String description, java.math.BigDecimal amount,

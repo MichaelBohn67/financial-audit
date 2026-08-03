@@ -104,6 +104,70 @@ class ImportOrchestratorServiceTest {
                 .anyMatch(error -> error.contains("Gap in foreign transaction ids"));
     }
 
+    @Test
+    void shouldApplyOpenBankingCompletenessConsistencyAndDataQualityChecks() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        ImportJobRepository importJobRepository = mock(ImportJobRepository.class);
+        ImportJobProtocolEntryRepository protocolEntryRepository = mock(ImportJobProtocolEntryRepository.class);
+        when(importJobRepository.save(any())).thenAnswer(invocation -> {
+            de.bohnottensen.financialaudit.domain.model.ImportJob job = invocation.getArgument(0);
+            if (job.getId() == null) {
+                job.setId(3L);
+            }
+            return job;
+        });
+        TransactionSourcePort openBankingSourcePort = new TransactionSourcePort() {
+            @Override
+            public boolean supports(Object source) {
+                return true;
+            }
+
+            @Override
+            public String sourceType() {
+                return "OPEN_BANKING";
+            }
+
+            @Override
+            public List<Booking> importTransactions(Object source) {
+                Booking valid = createBooking(200L, "Salary", new BigDecimal("500.00"));
+                valid.setSourceAccount("DE111");
+                valid.setDestinationAccount("DE222");
+
+                Booking missingTransactionId = createBooking(null, "NoTxId", new BigDecimal("10.00"));
+                missingTransactionId.setSourceAccount("DE333");
+                missingTransactionId.setDestinationAccount("DE444");
+
+                Booking futureTimestamp = createBooking(201L, "Future", new BigDecimal("20.00"));
+                futureTimestamp.setTransactionTimestamp(LocalDateTime.now().plusHours(1));
+                futureTimestamp.setSourceAccount("DE555");
+                futureTimestamp.setDestinationAccount("DE666");
+
+                Booking duplicatePayload = createBooking(202L, "Salary", new BigDecimal("500.00"));
+                duplicatePayload.setTransactionTimestamp(valid.getTransactionTimestamp());
+                duplicatePayload.setSourceAccount(valid.getSourceAccount());
+                duplicatePayload.setDestinationAccount(valid.getDestinationAccount());
+
+                return List.of(valid, missingTransactionId, futureTimestamp, duplicatePayload);
+            }
+        };
+
+        ImportOrchestratorService service = new ImportOrchestratorService(
+                List.of(openBankingSourcePort),
+                bookingRepository,
+                importJobRepository,
+                protocolEntryRepository
+        );
+
+        ImportJobResult result = service.importFrom("open-banking");
+
+        assertThat(result.importedCount()).isEqualTo(0);
+        assertThat(result.invalidCount()).isGreaterThanOrEqualTo(4);
+        assertThat(result.validationErrors().stream().map(ImportValidationError::error))
+                .anyMatch(error -> error.contains("transaction id"))
+                .anyMatch(error -> error.contains("timestamp is in the future"))
+                .anyMatch(error -> error.contains("Duplicate OpenBanking transaction payload"));
+    }
+
     private Booking createBooking(Long foreignId, String description, BigDecimal amount) {
         Booking booking = new Booking();
         booking.setForeignTransactionId(foreignId);

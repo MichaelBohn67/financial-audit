@@ -83,6 +83,8 @@ public class ImportOrchestratorService {
 
         if ("CSV".equalsIgnoreCase(transactionSource.sourceType())) {
             applyCsvSpecificValidations(valid, errors);
+        } else if ("OPEN_BANKING".equalsIgnoreCase(transactionSource.sourceType())) {
+            applyOpenBankingSpecificValidations(valid, errors);
         }
 
         List<Booking> accepted = valid.stream()
@@ -165,6 +167,54 @@ public class ImportOrchestratorService {
         }
         findDuplicateForeignTransactionIds(bookings, errors);
         findForeignTransactionIdGaps(bookings, errors);
+    }
+
+    private void applyOpenBankingSpecificValidations(List<IndexedBooking> bookings, List<ImportValidationError> errors) {
+        LocalDateTime now = LocalDateTime.now();
+        for (IndexedBooking indexedBooking : bookings) {
+            Booking booking = indexedBooking.booking();
+            if (booking.getForeignTransactionId() == null || booking.getForeignTransactionId() <= 0) {
+                errors.add(new ImportValidationError(indexedBooking.index(), "OpenBanking transaction id is required and must be positive"));
+            }
+            if (booking.getTransactionTimestamp() != null && booking.getTransactionTimestamp().isAfter(now.plusMinutes(5))) {
+                errors.add(new ImportValidationError(indexedBooking.index(), "OpenBanking booking timestamp is in the future"));
+            }
+            if (!isOpenBankingAccountIdValid(booking.getSourceAccount())) {
+                errors.add(new ImportValidationError(indexedBooking.index(), "OpenBanking source account id format is invalid"));
+            }
+            if (!isOpenBankingAccountIdValid(booking.getDestinationAccount())) {
+                errors.add(new ImportValidationError(indexedBooking.index(), "OpenBanking destination account id format is invalid"));
+            }
+        }
+        findDuplicateForeignTransactionIds(bookings, errors);
+        findDuplicateBusinessTransactions(bookings, errors);
+    }
+
+    private boolean isOpenBankingAccountIdValid(String accountId) {
+        return accountId != null
+                && accountId.matches("[A-Z]{2}[A-Z0-9]{3,32}");
+    }
+
+    private void findDuplicateBusinessTransactions(List<IndexedBooking> bookings, List<ImportValidationError> errors) {
+        Map<String, List<IndexedBooking>> grouped = bookings.stream()
+                .collect(Collectors.groupingBy(this::businessTransactionKey));
+
+        grouped.forEach((key, groupedBookings) -> {
+            if (groupedBookings.size() > 1) {
+                groupedBookings.forEach(indexedBooking ->
+                        errors.add(new ImportValidationError(indexedBooking.index(), "Duplicate OpenBanking transaction payload: " + key)));
+            }
+        });
+    }
+
+    private String businessTransactionKey(IndexedBooking indexedBooking) {
+        Booking booking = indexedBooking.booking();
+        return String.join("|",
+                String.valueOf(booking.getTransactionTimestamp()),
+                String.valueOf(booking.getAmount()),
+                String.valueOf(booking.getCurrency()),
+                String.valueOf(booking.getSourceAccount()),
+                String.valueOf(booking.getDestinationAccount()));
     }
 
     private void persistValidationProtocol(Long jobId, List<ImportValidationError> errors) {

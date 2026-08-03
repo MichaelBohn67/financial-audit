@@ -123,7 +123,7 @@ Die Roadmap wurde in kleine, atomare Umsetzungsaufgaben zerlegt, damit jede Aufg
 7. [x] Refaktoriere den Import-Controller so, dass er an einen Import-Use-Case-Service delegiert.
 8. [x] Implementiere Import-Job-Tracking mit Status, Laufkontext und Protokollpersistenz.
 9. [x] Ergänze CSV-Importvalidierungen für Vollständigkeit, Konsistenz, Duplikate und Lücken in Belegnummern.
-10. Ergänze OpenBanking-Importvalidierungen für Vollständigkeit, Konsistenz und Datenqualitätsfehler.
+10. [x] Ergänze OpenBanking-Importvalidierungen für Vollständigkeit, Konsistenz und Datenqualitätsfehler.
 11. Implementiere ein regelbasiertes Analytics-Modul für Zeitfenster-, Schwellen- und Musterregeln.
 12. Implementiere eine separate Benford-Analyse mit Ergebnispersistenz in findingsnahen Tabellen.
 13. Implementiere eine Muster-/Duplikat-/Lückenanalyse mit nachvollziehbarer Ergebnisstruktur.

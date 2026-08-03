@@ -1,0 +1,78 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-1-create-report-templates-table
+      author: junie
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: report_templates
+      changes:
+        - createTable:
+            tableName: report_templates
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_report_templates
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(1024)
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: report_templates
+            columnNames: name, version
+            constraintName: uq_report_template_name_version
+
+  - changeSet:
+      id: 018-2-add-versioning-columns-to-report-runs
+      author: junie
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            columnExists:
+              tableName: report_runs
+              columnName: template_id
+      changes:
+        - addColumn:
+            tableName: report_runs
+            columns:
+              - column:
+                  name: template_id
+                  type: BIGINT
+              - column:
+                  name: triggered_by
+                  type: VARCHAR(255)
+              - column:
+                  name: parameters
+                  type: VARCHAR(2048)
+              - column:
+                  name: error_message
+                  type: VARCHAR(2048)
+              - column:
+                  name: completed_at
+                  type: DATETIME(6)

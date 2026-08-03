@@ -19,3 +19,5 @@ databaseChangeLog:
       file: db/changelog/changes/compliance/016-create-pattern-analysis-tables.yaml
   - include:
       file: db/changelog/changes/compliance/017-create-mus-sampling-items-table.yaml
+  - include:
+      file: db/changelog/changes/compliance/018-report-template-versioning.yaml

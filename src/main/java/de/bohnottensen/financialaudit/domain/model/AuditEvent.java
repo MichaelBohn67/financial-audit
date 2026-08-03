@@ -1,6 +1,7 @@
 package de.bohnottensen.financialaudit.domain.model;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -27,26 +28,15 @@ public class AuditEvent {
     @Column(name = "event_type", nullable = false, length = 100)
     private String eventType;
 
-    @Column(nullable = false, length = 255)
-    private String actor;
-
-    @Column(nullable = false, length = 1024)
-    private String summary;
-
-    @Column(name = "previous_value", length = 4000)
-    private String previousValue;
-
-    @Column(name = "current_value", length = 4000)
-    private String currentValue;
-
-    @Column(name = "occurred_at", nullable = false, updatable = false)
-    private LocalDateTime occurredAt;
+    @Embedded
+    private AuditEventMetadata metadata = new AuditEventMetadata();
 
     @PrePersist
     protected void onCreate() {
-        if (occurredAt == null) {
-            occurredAt = LocalDateTime.now();
+        if (metadata == null) {
+            metadata = new AuditEventMetadata();
         }
+        metadata.initializeOccurredAtIfMissing();
     }
 
     public Long getId() {
@@ -82,38 +72,46 @@ public class AuditEvent {
     }
 
     public String getActor() {
-        return actor;
+        return metadata.getActor();
     }
 
     public void setActor(String actor) {
-        this.actor = actor;
+        metadata.setActor(actor);
     }
 
     public String getSummary() {
-        return summary;
+        return metadata.getSummary();
     }
 
     public void setSummary(String summary) {
-        this.summary = summary;
+        metadata.setSummary(summary);
     }
 
     public String getPreviousValue() {
-        return previousValue;
+        return metadata.getPreviousValue();
     }
 
     public void setPreviousValue(String previousValue) {
-        this.previousValue = previousValue;
+        metadata.setPreviousValue(previousValue);
     }
 
     public String getCurrentValue() {
-        return currentValue;
+        return metadata.getCurrentValue();
     }
 
     public void setCurrentValue(String currentValue) {
-        this.currentValue = currentValue;
+        metadata.setCurrentValue(currentValue);
     }
 
     public LocalDateTime getOccurredAt() {
-        return occurredAt;
+        return metadata.getOccurredAt();
+    }
+
+    public AuditEventMetadata getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(AuditEventMetadata metadata) {
+        this.metadata = metadata == null ? new AuditEventMetadata() : metadata;
     }
 }

@@ -125,7 +125,7 @@ Die Roadmap wurde in kleine, atomare Umsetzungsaufgaben zerlegt, damit jede Aufg
 9. [x] Ergänze CSV-Importvalidierungen für Vollständigkeit, Konsistenz, Duplikate und Lücken in Belegnummern.
 10. [x] Ergänze OpenBanking-Importvalidierungen für Vollständigkeit, Konsistenz und Datenqualitätsfehler.
 11. [x] Implementiere ein regelbasiertes Analytics-Modul für Zeitfenster-, Schwellen- und Musterregeln.
-12. Implementiere eine separate Benford-Analyse mit Ergebnispersistenz in findingsnahen Tabellen.
+12. [x] Implementiere eine separate Benford-Analyse mit Ergebnispersistenz in findingsnahen Tabellen.
 13. Implementiere eine Muster-/Duplikat-/Lückenanalyse mit nachvollziehbarer Ergebnisstruktur.
 14. Baue eine Sampling-Engine für deterministische MUS-Stichproben auf.
 15. Ergänze Zufalls- und geschichtete Sampling-Strategien mit dokumentierten Parametern und Seeds.

@@ -13,3 +13,5 @@ databaseChangeLog:
       file: db/changelog/changes/compliance/013-rbac-role-permission-seed.yaml
   - include:
       file: db/changelog/changes/compliance/014-create-import-job-tracking-tables.yaml
+  - include:
+      file: db/changelog/changes/compliance/015-create-benford-analysis-tables.yaml

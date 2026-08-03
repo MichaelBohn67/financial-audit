@@ -1,0 +1,114 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-1-create-benford-analysis-runs-table
+      author: junie
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: benford_analysis_runs
+      changes:
+        - createTable:
+            tableName: benford_analysis_runs
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_benford_analysis_runs
+              - column:
+                  name: run_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: rule_version
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: run_context
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: booking_count
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: suspicious_digit_count
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 015-2-create-benford-digit-stats-table
+      author: junie
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: benford_digit_stats
+      changes:
+        - createTable:
+            tableName: benford_digit_stats
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_benford_digit_stats
+              - column:
+                  name: benford_run_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: leading_digit
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expected_ratio
+                  type: DECIMAL(10,6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: observed_ratio
+                  type: DECIMAL(10,6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: absolute_deviation
+                  type: DECIMAL(10,6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sample_size
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: benford_digit_stats
+            baseColumnNames: benford_run_id
+            referencedTableName: benford_analysis_runs
+            referencedColumnNames: id
+            constraintName: fk_benford_digit_stats_on_run

@@ -1,5 +1,6 @@
 package de.bohnottensen.financialaudit.infrastructure.web;
 
+import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BookingRepository;
 import org.springframework.stereotype.Controller;
@@ -11,9 +12,11 @@ import org.springframework.web.bind.annotation.*;
 public class BookingWebController {
 
     private final BookingRepository bookingRepository;
+    private final AuditTrailWriter auditTrailWriter;
 
-    public BookingWebController(BookingRepository bookingRepository) {
+    public BookingWebController(BookingRepository bookingRepository, AuditTrailWriter auditTrailWriter) {
         this.bookingRepository = bookingRepository;
+        this.auditTrailWriter = auditTrailWriter;
     }
 
     @GetMapping
@@ -33,17 +36,38 @@ public class BookingWebController {
         if (booking.getTransactionTimestamp() == null) {
             booking.setTransactionTimestamp(java.time.LocalDateTime.now());
         }
-        bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
+        auditTrailWriter.record(
+                "BOOKING",
+                savedBooking.getId(),
+                "BOOKING_CREATED",
+                "WEB_USER",
+                "Booking created",
+                null,
+                bookingSnapshot(savedBooking)
+        );
         return "redirect:/bookings";
     }
 
     @PostMapping("/{id}")
     public String updateBooking(@PathVariable Long id, @ModelAttribute Booking booking) {
+        Booking previous = bookingRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid booking Id:" + id));
+        String previousValue = bookingSnapshot(previous);
         booking.setId(id);
         if (booking.getTransactionTimestamp() == null) {
             booking.setTransactionTimestamp(java.time.LocalDateTime.now());
         }
-        bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
+        auditTrailWriter.record(
+                "BOOKING",
+                savedBooking.getId(),
+                "BOOKING_UPDATED",
+                "WEB_USER",
+                "Booking updated",
+                previousValue,
+                bookingSnapshot(savedBooking)
+        );
         return "redirect:/bookings";
     }
 
@@ -53,5 +77,14 @@ public class BookingWebController {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid booking Id:" + id));
         model.addAttribute("booking", booking);
         return "booking-form";
+    }
+
+    private String bookingSnapshot(Booking booking) {
+        return "description=" + booking.getDescription()
+                + ";amount=" + booking.getAmount()
+                + ";currency=" + booking.getCurrency()
+                + ";timestamp=" + booking.getTransactionTimestamp()
+                + ";source=" + booking.getSourceAccount()
+                + ";destination=" + booking.getDestinationAccount();
     }
 }

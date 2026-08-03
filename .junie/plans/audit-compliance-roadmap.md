@@ -117,7 +117,7 @@ Die Roadmap wurde in kleine, atomare Umsetzungsaufgaben zerlegt, damit jede Aufg
 1. [x] Definiere den initialen Compliance-Umfang und erstelle eine Traceability-Matrix für Import, Analyse, Sampling, Workflow, Security und Reporting.
 2. [x] Ergänze die Liquibase-Changelog-Struktur um die ersten Compliance-Migrationen für die Basis-Tabellen.
 3. [x] Erstelle die Domain-Entitäten für Audit-Events und zugehörige Metadaten.
-4. Implementiere einen Audit-Trail-Writer für kritische Schreiboperationen von Buchungen, Findings und Arbeitspapieren.
+4. [x] Implementiere einen Audit-Trail-Writer für kritische Schreiboperationen von Buchungen, Findings und Arbeitspapieren.
 5. Ergänze Rollen- und Berechtigungsmodelle inklusive Seed-Daten für die Mindestrollen.
 6. Konfiguriere Spring Security mit rollenbasierten Zugriffregeln für Mandant-, Projekt- und Dokumentebene.
 7. Refaktoriere den Import-Controller so, dass er an einen Import-Use-Case-Service delegiert.

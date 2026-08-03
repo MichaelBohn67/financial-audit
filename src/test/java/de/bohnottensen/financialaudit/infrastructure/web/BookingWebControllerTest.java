@@ -1,5 +1,6 @@
 package de.bohnottensen.financialaudit.infrastructure.web;
 
+import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BookingRepository;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,9 @@ class BookingWebControllerTest {
     @MockBean
     private BookingRepository bookingRepository;
 
+    @MockBean
+    private AuditTrailWriter auditTrailWriter;
+
     @Test
     void shouldListBookings() throws Exception {
         Booking booking = new Booking();
@@ -54,6 +58,16 @@ class BookingWebControllerTest {
 
     @Test
     void shouldSaveNewBooking() throws Exception {
+        Booking savedBooking = new Booking();
+        savedBooking.setId(1L);
+        savedBooking.setDescription("New Booking");
+        savedBooking.setAmount(new BigDecimal("200.00"));
+        savedBooking.setCurrency("EUR");
+        savedBooking.setSourceAccount("ACC1");
+        savedBooking.setDestinationAccount("ACC2");
+        savedBooking.setTransactionTimestamp(java.time.LocalDateTime.parse("2023-10-27T10:00:00"));
+        when(bookingRepository.save(any(Booking.class))).thenReturn(savedBooking);
+
         mockMvc.perform(post("/bookings")
                 .param("description", "New Booking")
                 .param("amount", "200.00")

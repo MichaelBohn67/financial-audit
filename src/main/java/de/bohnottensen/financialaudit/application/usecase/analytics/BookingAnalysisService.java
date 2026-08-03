@@ -1,5 +1,6 @@
 package de.bohnottensen.financialaudit.application.usecase.analytics;
 
+import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
 import de.bohnottensen.financialaudit.domain.model.AmlEngine;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.domain.model.Finding;
@@ -18,13 +19,16 @@ public class BookingAnalysisService {
     private final BookingRepository bookingRepository;
     private final FindingRepository findingRepository;
     private final AmlEngine amlEngine;
+    private final AuditTrailWriter auditTrailWriter;
 
     public BookingAnalysisService(BookingRepository bookingRepository,
                                   FindingRepository findingRepository,
-                                  AmlEngine amlEngine) {
+                                  AmlEngine amlEngine,
+                                  AuditTrailWriter auditTrailWriter) {
         this.bookingRepository = bookingRepository;
         this.findingRepository = findingRepository;
         this.amlEngine = amlEngine;
+        this.auditTrailWriter = auditTrailWriter;
     }
 
     public List<Finding> run(AnalysisRunRequest request) {
@@ -43,7 +47,17 @@ public class BookingAnalysisService {
                 finding.setAnalysisRunId(runId);
                 finding.setRuleVersion(request.ruleVersion());
                 finding.setRunContext(request.runContext());
-                findings.add(findingRepository.save(finding));
+                Finding savedFinding = findingRepository.save(finding);
+                auditTrailWriter.record(
+                        "FINDING",
+                        savedFinding.getId(),
+                        "FINDING_CREATED",
+                        "SYSTEM_AML",
+                        "Finding created by AML analysis",
+                        null,
+                        findingSnapshot(savedFinding)
+                );
+                findings.add(savedFinding);
             }
         }
 
@@ -55,5 +69,15 @@ public class BookingAnalysisService {
             return "HIGH";
         }
         return "MEDIUM";
+    }
+
+    private String findingSnapshot(Finding finding) {
+        return "bookingId=" + (finding.getBooking() != null ? finding.getBooking().getId() : null)
+                + ";ruleName=" + finding.getRuleName()
+                + ";riskLevel=" + finding.getRiskLevel()
+                + ";status=" + finding.getStatus()
+                + ";analysisRunId=" + finding.getAnalysisRunId()
+                + ";ruleVersion=" + finding.getRuleVersion()
+                + ";runContext=" + finding.getRunContext();
     }
 }

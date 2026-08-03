@@ -1,6 +1,7 @@
 package de.bohnottensen.financialaudit.infrastructure.adapter;
 
 import de.bohnottensen.financialaudit.application.ports.TransactionSourcePort;
+import de.bohnottensen.financialaudit.application.usecase.importing.OpenBankingImportSource;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -21,11 +22,34 @@ public class OpenBankingApiClientAdapter implements TransactionSourcePort {
     }
 
     @Override
+    public boolean supports(Object source) {
+        return source instanceof OpenBankingImportSource || source instanceof String;
+    }
+
+    @Override
+    public String sourceType() {
+        return "OPEN_BANKING";
+    }
+
+    @Override
     public List<Booking> importTransactions(Object source) {
-        String accountId = source instanceof String ? (String) source : null;
-        String uri = accountId == null || accountId.isBlank()
-                ? "/open-banking/v1/transactions"
-                : "/open-banking/v1/transactions?accountId=" + accountId;
+        String uri;
+        if (source instanceof OpenBankingImportSource importSource) {
+            StringBuilder uriBuilder = new StringBuilder("/open-banking/v1/transactions?tenantId=")
+                    .append(importSource.tenantId())
+                    .append("&projectId=")
+                    .append(importSource.projectId());
+            if (importSource.accountId() != null && !importSource.accountId().isBlank()) {
+                uriBuilder.append("&accountId=").append(importSource.accountId());
+            }
+            uri = uriBuilder.toString();
+        } else if (source instanceof String accountId) {
+            uri = accountId.isBlank()
+                    ? "/open-banking/v1/transactions"
+                    : "/open-banking/v1/transactions?accountId=" + accountId;
+        } else {
+            throw new IllegalArgumentException("Source must be OpenBankingImportSource or accountId String");
+        }
 
         OpenBankingTransactionResponse[] response = restClient.get()
                 .uri(uri)

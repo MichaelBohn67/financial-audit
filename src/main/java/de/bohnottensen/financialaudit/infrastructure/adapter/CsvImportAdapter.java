@@ -2,6 +2,7 @@ package de.bohnottensen.financialaudit.infrastructure.adapter;
 
 import de.bohnottensen.financialaudit.application.ports.TransactionSourcePort;
 import de.bohnottensen.financialaudit.domain.model.Booking;
+import org.springframework.stereotype.Component;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,7 +14,18 @@ import java.util.List;
 /**
  * REQ-INT-001: CSV Implementation of TransactionSourcePort.
  */
+@Component
 public class CsvImportAdapter implements TransactionSourcePort {
+
+    @Override
+    public boolean supports(Object source) {
+        return source instanceof InputStream;
+    }
+
+    @Override
+    public String sourceType() {
+        return "CSV";
+    }
 
     @Override
     public List<Booking> importTransactions(Object source) {

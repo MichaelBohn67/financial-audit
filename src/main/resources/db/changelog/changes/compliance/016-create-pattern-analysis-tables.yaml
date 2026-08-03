@@ -1,0 +1,130 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-1-create-pattern-analysis-runs-table
+      author: junie
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: pattern_analysis_runs
+      changes:
+        - createTable:
+            tableName: pattern_analysis_runs
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_pattern_analysis_runs
+              - column:
+                  name: run_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: rule_version
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: run_context
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: booking_count
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: issue_count
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 016-2-create-pattern-analysis-issues-table
+      author: junie
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: pattern_analysis_issues
+      changes:
+        - createTable:
+            tableName: pattern_analysis_issues
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_pattern_analysis_issues
+              - column:
+                  name: pattern_run_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: issue_type
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: severity
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reference_key
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(1024)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: primary_booking_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurrence_count
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: details_json
+                  type: VARCHAR(4000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: pattern_analysis_issues
+            baseColumnNames: pattern_run_id
+            referencedTableName: pattern_analysis_runs
+            referencedColumnNames: id
+            constraintName: fk_pattern_analysis_issues_on_run
+        - addForeignKeyConstraint:
+            baseTableName: pattern_analysis_issues
+            baseColumnNames: primary_booking_id
+            referencedTableName: bookings
+            referencedColumnNames: id
+            constraintName: fk_pattern_analysis_issues_on_booking

@@ -2,10 +2,15 @@ package de.bohnottensen.financialaudit.application.usecase.workpaper;
 
 import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
 import de.bohnottensen.financialaudit.domain.model.ReviewAction;
+import de.bohnottensen.financialaudit.domain.model.ReviewActionType;
 import de.bohnottensen.financialaudit.domain.model.Workpaper;
+import de.bohnottensen.financialaudit.domain.model.WorkpaperStatus;
 import de.bohnottensen.financialaudit.infrastructure.persistence.ReviewActionRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.WorkpaperRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.EnumSet;
+import java.util.Set;
 
 @Service
 public class WorkpaperService {
@@ -25,9 +30,10 @@ public class WorkpaperService {
     public Workpaper create(String title, String createdBy) {
         Workpaper workpaper = new Workpaper();
         workpaper.setTitle(title);
-        workpaper.setStatus("DRAFT");
+        workpaper.setStatus(WorkpaperStatus.DRAFT.name());
         workpaper.setCreatedBy(createdBy);
         Workpaper savedWorkpaper = workpaperRepository.save(workpaper);
+        recordReviewAction(savedWorkpaper, createdBy, ReviewActionType.CREATE, "Workpaper created");
         auditTrailWriter.record(
                 "WORKPAPER",
                 savedWorkpaper.getId(),
@@ -40,45 +46,80 @@ public class WorkpaperService {
         return savedWorkpaper;
     }
 
+    public Workpaper startProgress(Long workpaperId, String actor) {
+        return transition(workpaperId, actor, ReviewActionType.START, WorkpaperStatus.IN_PROGRESS, "Workpaper progress started");
+    }
+
     public Workpaper submit(Long workpaperId, String actor) {
-        Workpaper workpaper = workpaperRepository.findById(workpaperId).orElseThrow();
-        String previousValue = workpaperSnapshot(workpaper);
-        workpaper.setStatus("SUBMITTED");
-        workpaper.setAssignedTo(actor);
-        Workpaper savedWorkpaper = workpaperRepository.save(workpaper);
-        auditTrailWriter.record(
-                "WORKPAPER",
-                savedWorkpaper.getId(),
-                "WORKPAPER_SUBMITTED",
-                actor,
-                "Workpaper submitted",
-                previousValue,
-                workpaperSnapshot(savedWorkpaper)
-        );
-        return savedWorkpaper;
+        return transition(workpaperId, actor, ReviewActionType.SUBMIT, WorkpaperStatus.SUBMITTED, "Workpaper submitted");
+    }
+
+    public Workpaper requestChanges(Long workpaperId, String actor, String comment) {
+        return transition(workpaperId, actor, ReviewActionType.REQUEST_CHANGES, WorkpaperStatus.CHANGES_REQUESTED, comment);
     }
 
     public Workpaper approve(Long workpaperId, String actor) {
+        return transition(workpaperId, actor, ReviewActionType.APPROVE, WorkpaperStatus.APPROVED, "Workpaper approved");
+    }
+
+    private Workpaper transition(Long workpaperId,
+                                 String actor,
+                                 ReviewActionType action,
+                                 WorkpaperStatus targetStatus,
+                                 String summary) {
         Workpaper workpaper = workpaperRepository.findById(workpaperId).orElseThrow();
+        WorkpaperStatus currentStatus = WorkpaperStatus.valueOf(workpaper.getStatus());
+        validateTransition(currentStatus, targetStatus);
+
         String previousValue = workpaperSnapshot(workpaper);
-        workpaper.setStatus("APPROVED");
+        workpaper.setStatus(targetStatus.name());
         workpaper.setAssignedTo(actor);
         Workpaper savedWorkpaper = workpaperRepository.save(workpaper);
+
         auditTrailWriter.record(
                 "WORKPAPER",
                 savedWorkpaper.getId(),
-                "WORKPAPER_APPROVED",
+                "WORKPAPER_" + action.name(),
                 actor,
-                "Workpaper approved",
+                summary,
                 previousValue,
                 workpaperSnapshot(savedWorkpaper)
         );
-        ReviewAction reviewAction = new ReviewAction();
-        reviewAction.setWorkpaper(savedWorkpaper);
-        reviewAction.setActor(actor);
-        reviewAction.setAction("APPROVE");
-        reviewActionRepository.save(reviewAction);
+
+        recordReviewAction(savedWorkpaper, actor, action, summary);
         return savedWorkpaper;
+    }
+
+    private void validateTransition(WorkpaperStatus currentStatus, WorkpaperStatus targetStatus) {
+        if (currentStatus == targetStatus) {
+            throw new IllegalStateException("Workpaper is already in status " + targetStatus);
+        }
+
+        Set<WorkpaperStatus> allowedTargets;
+        switch (currentStatus) {
+            case DRAFT -> allowedTargets = EnumSet.of(WorkpaperStatus.IN_PROGRESS);
+            case IN_PROGRESS -> allowedTargets = EnumSet.of(WorkpaperStatus.SUBMITTED);
+            case SUBMITTED -> allowedTargets = EnumSet.of(WorkpaperStatus.CHANGES_REQUESTED, WorkpaperStatus.APPROVED);
+            case CHANGES_REQUESTED -> allowedTargets = EnumSet.of(WorkpaperStatus.IN_PROGRESS);
+            case APPROVED -> allowedTargets = EnumSet.noneOf(WorkpaperStatus.class);
+            default -> throw new IllegalStateException("Unsupported status: " + currentStatus);
+        }
+
+        if (!allowedTargets.contains(targetStatus)) {
+            throw new IllegalStateException("Invalid workpaper transition: " + currentStatus + " -> " + targetStatus);
+        }
+    }
+
+    private void recordReviewAction(Workpaper workpaper,
+                                    String actor,
+                                    ReviewActionType action,
+                                    String comment) {
+        ReviewAction reviewAction = new ReviewAction();
+        reviewAction.setWorkpaper(workpaper);
+        reviewAction.setActor(actor);
+        reviewAction.setAction(action.name());
+        reviewAction.setComment(comment);
+        reviewActionRepository.save(reviewAction);
     }
 
     private String workpaperSnapshot(Workpaper workpaper) {

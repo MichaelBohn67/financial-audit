@@ -129,7 +129,7 @@ Die Roadmap wurde in kleine, atomare Umsetzungsaufgaben zerlegt, damit jede Aufg
 13. [x] Implementiere eine Muster-/Duplikat-/Lückenanalyse mit nachvollziehbarer Ergebnisstruktur.
 14. [x] Baue eine Sampling-Engine für deterministische MUS-Stichproben auf.
 15. [x] Ergänze Zufalls- und geschichtete Sampling-Strategien mit dokumentierten Parametern und Seeds.
-16. Modelliere Workpapers, Aufgabenstatus und Review-Aktionen inklusive Zustandsübergängen.
+16. [x] Modelliere Workpapers, Aufgabenstatus und Review-Aktionen inklusive Zustandsübergängen.
 17. Implementiere einen rollenbasierten Review-Workflow von Assistant über SeniorAuditor bis Wirtschaftspruefer.
 18. Ergänze Report-Template-Versionierung und Report-Run-Persistenz.
 19. Implementiere Reporting- und Export-Use-Cases für strukturierte Berichte und Exportartefakte.

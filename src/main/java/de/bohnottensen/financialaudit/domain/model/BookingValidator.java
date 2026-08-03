@@ -21,6 +21,12 @@ public class BookingValidator {
 
         if (booking.getCurrency() == null || booking.getCurrency().isBlank()) {
             errors.add("Currency is required");
+        } else if (!booking.getCurrency().matches("[A-Z]{3}")) {
+            errors.add("Currency must be a 3-letter ISO code");
+        }
+
+        if (booking.getTransactionTimestamp() == null) {
+            errors.add("Transaction Timestamp is required");
         }
 
         if (booking.getSourceAccount() == null || booking.getSourceAccount().isBlank()) {
@@ -29,6 +35,8 @@ public class BookingValidator {
 
         if (booking.getDestinationAccount() == null || booking.getDestinationAccount().isBlank()) {
             errors.add("Destination Account is required");
+        } else if (booking.getSourceAccount() != null && booking.getSourceAccount().equals(booking.getDestinationAccount())) {
+            errors.add("Source and Destination Account must differ");
         }
 
         return errors;

@@ -81,8 +81,9 @@ public class ImportOrchestratorService {
             }
         }
 
-        findDuplicateForeignTransactionIds(valid, errors);
-        findForeignTransactionIdGaps(valid, errors);
+        if ("CSV".equalsIgnoreCase(transactionSource.sourceType())) {
+            applyCsvSpecificValidations(valid, errors);
+        }
 
         List<Booking> accepted = valid.stream()
                 .filter(indexedBooking -> errors.stream().noneMatch(error -> error.index() == indexedBooking.index()))
@@ -154,6 +155,16 @@ public class ImportOrchestratorService {
     }
 
     private record IndexedBooking(int index, Booking booking) {
+    }
+
+    private void applyCsvSpecificValidations(List<IndexedBooking> bookings, List<ImportValidationError> errors) {
+        for (IndexedBooking indexedBooking : bookings) {
+            if (indexedBooking.booking().getForeignTransactionId() == null) {
+                errors.add(new ImportValidationError(indexedBooking.index(), "Document number (foreign transaction id) is required for CSV import"));
+            }
+        }
+        findDuplicateForeignTransactionIds(bookings, errors);
+        findForeignTransactionIdGaps(bookings, errors);
     }
 
     private void persistValidationProtocol(Long jobId, List<ImportValidationError> errors) {

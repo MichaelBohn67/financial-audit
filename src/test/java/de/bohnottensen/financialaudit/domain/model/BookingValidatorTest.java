@@ -14,6 +14,7 @@ class BookingValidatorTest {
         booking.setDescription("Valid");
         booking.setAmount(BigDecimal.ONE);
         booking.setCurrency("EUR");
+        booking.setTransactionTimestamp(java.time.LocalDateTime.now());
         booking.setSourceAccount("DE1");
         booking.setDestinationAccount("DE2");
 

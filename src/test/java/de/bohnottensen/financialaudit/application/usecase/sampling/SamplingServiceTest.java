@@ -70,6 +70,109 @@ class SamplingServiceTest {
                 .containsExactlyElementsOf(secondRunItems.stream().map(SamplingRunItem::getSelectionPoint).toList());
     }
 
+    @Test
+    void shouldCreateDeterministicRandomSample() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
+        SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
+
+        when(bookingRepository.findAll()).thenReturn(List.of(
+                booking(1L, "100.00"),
+                booking(2L, "200.00"),
+                booking(3L, "300.00"),
+                booking(4L, "400.00")
+        ));
+
+        when(runRepository.save(any(SamplingRun.class))).thenAnswer(invocation -> {
+            SamplingRun run = invocation.getArgument(0);
+            run.setId(56L);
+            return run;
+        });
+
+        List<SamplingRunItem> firstRunItems = new ArrayList<>();
+        when(runItemRepository.save(any(SamplingRunItem.class))).thenAnswer(invocation -> {
+            SamplingRunItem item = invocation.getArgument(0);
+            firstRunItems.add(item);
+            return item;
+        });
+
+        SamplingService service = new SamplingService(bookingRepository, runRepository, runItemRepository);
+        SamplingRun firstRun = service.generateRandomSample("task15-random-run-1", 999L, 3L, 321L);
+
+        List<SamplingRunItem> secondRunItems = new ArrayList<>();
+        when(runItemRepository.save(any(SamplingRunItem.class))).thenAnswer(invocation -> {
+            SamplingRunItem item = invocation.getArgument(0);
+            secondRunItems.add(item);
+            return item;
+        });
+
+        SamplingRun secondRun = service.generateRandomSample("task15-random-run-2", 999L, 3L, 321L);
+
+        assertThat(firstRun.getSamplingStrategy()).isEqualTo("RANDOM");
+        assertThat(firstRun.getSampleSize()).isEqualTo(3L);
+        assertThat(firstRun.getParametersJson()).contains("\"seed\":321");
+        assertThat(secondRun.getParametersJson()).isEqualTo(firstRun.getParametersJson());
+
+        assertThat(firstRunItems).hasSize(3);
+        assertThat(secondRunItems).hasSize(3);
+        assertThat(firstRunItems.stream().map(SamplingRunItem::getBookingId).toList())
+                .containsExactlyElementsOf(secondRunItems.stream().map(SamplingRunItem::getBookingId).toList());
+    }
+
+    @Test
+    void shouldCreateDeterministicStratifiedSample() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
+        SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
+
+        when(bookingRepository.findAll()).thenReturn(List.of(
+                booking(1L, "50.00"),
+                booking(2L, "75.00"),
+                booking(3L, "100.00"),
+                booking(4L, "500.00"),
+                booking(5L, "800.00"),
+                booking(6L, "1200.00")
+        ));
+
+        when(runRepository.save(any(SamplingRun.class))).thenAnswer(invocation -> {
+            SamplingRun run = invocation.getArgument(0);
+            run.setId(57L);
+            return run;
+        });
+
+        List<SamplingRunItem> firstRunItems = new ArrayList<>();
+        when(runItemRepository.save(any(SamplingRunItem.class))).thenAnswer(invocation -> {
+            SamplingRunItem item = invocation.getArgument(0);
+            firstRunItems.add(item);
+            return item;
+        });
+
+        SamplingService service = new SamplingService(bookingRepository, runRepository, runItemRepository);
+        SamplingRun firstRun = service.generateStratifiedSample("task15-stratified-run-1", 999L, 4L, 987L, 3);
+
+        List<SamplingRunItem> secondRunItems = new ArrayList<>();
+        when(runItemRepository.save(any(SamplingRunItem.class))).thenAnswer(invocation -> {
+            SamplingRunItem item = invocation.getArgument(0);
+            secondRunItems.add(item);
+            return item;
+        });
+
+        SamplingRun secondRun = service.generateStratifiedSample("task15-stratified-run-2", 999L, 4L, 987L, 3);
+
+        assertThat(firstRun.getSamplingStrategy()).isEqualTo("STRATIFIED");
+        assertThat(firstRun.getSampleSize()).isEqualTo(4L);
+        assertThat(firstRun.getParametersJson()).contains("\"stratumCount\":3");
+        assertThat(firstRun.getParametersJson()).contains("\"seed\":987");
+        assertThat(secondRun.getParametersJson()).isEqualTo(firstRun.getParametersJson());
+
+        assertThat(firstRunItems).hasSize(4);
+        assertThat(secondRunItems).hasSize(4);
+        assertThat(firstRunItems.stream().map(SamplingRunItem::getBookingId).toList())
+                .containsExactlyElementsOf(secondRunItems.stream().map(SamplingRunItem::getBookingId).toList());
+        assertThat(firstRunItems.stream().map(item -> item.getSelectionPoint().intValue()).distinct().toList())
+                .containsAnyOf(1, 2, 3);
+    }
+
     private Booking booking(Long id, String amount) {
         Booking booking = new Booking();
         booking.setId(id);

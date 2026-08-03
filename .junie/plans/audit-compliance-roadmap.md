@@ -128,7 +128,7 @@ Die Roadmap wurde in kleine, atomare Umsetzungsaufgaben zerlegt, damit jede Aufg
 12. [x] Implementiere eine separate Benford-Analyse mit Ergebnispersistenz in findingsnahen Tabellen.
 13. [x] Implementiere eine Muster-/Duplikat-/Lückenanalyse mit nachvollziehbarer Ergebnisstruktur.
 14. [x] Baue eine Sampling-Engine für deterministische MUS-Stichproben auf.
-15. Ergänze Zufalls- und geschichtete Sampling-Strategien mit dokumentierten Parametern und Seeds.
+15. [x] Ergänze Zufalls- und geschichtete Sampling-Strategien mit dokumentierten Parametern und Seeds.
 16. Modelliere Workpapers, Aufgabenstatus und Review-Aktionen inklusive Zustandsübergängen.
 17. Implementiere einen rollenbasierten Review-Workflow von Assistant über SeniorAuditor bis Wirtschaftspruefer.
 18. Ergänze Report-Template-Versionierung und Report-Run-Persistenz.

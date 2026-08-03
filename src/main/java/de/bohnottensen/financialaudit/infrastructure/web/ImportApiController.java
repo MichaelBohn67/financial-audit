@@ -2,6 +2,7 @@ package de.bohnottensen.financialaudit.infrastructure.web;
 
 import de.bohnottensen.financialaudit.application.usecase.importing.ImportJobResult;
 import de.bohnottensen.financialaudit.application.usecase.importing.ImportOrchestratorService;
+import de.bohnottensen.financialaudit.application.usecase.importing.ImportRunContext;
 import de.bohnottensen.financialaudit.application.usecase.importing.OpenBankingImportSource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,7 +32,8 @@ public class ImportApiController {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("CSV file must not be empty");
         }
-        return importOrchestratorService.importFrom(file.getInputStream());
+        ImportRunContext runContext = new ImportRunContext(tenantId, projectId, documentId, "CSV_UPLOAD");
+        return importOrchestratorService.importFrom(runContext, file.getInputStream());
     }
 
     @PostMapping("/open-banking")
@@ -40,6 +42,7 @@ public class ImportApiController {
                                              @RequestParam String projectId,
                                              @RequestParam String documentId,
                                              @RequestParam(required = false) String accountId) {
-        return importOrchestratorService.importFrom(new OpenBankingImportSource(tenantId, projectId, accountId));
+        ImportRunContext runContext = new ImportRunContext(tenantId, projectId, documentId, "OPEN_BANKING_PULL");
+        return importOrchestratorService.importFrom(runContext, new OpenBankingImportSource(tenantId, projectId, accountId));
     }
 }

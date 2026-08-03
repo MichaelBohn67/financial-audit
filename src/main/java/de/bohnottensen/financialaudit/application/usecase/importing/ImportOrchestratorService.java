@@ -3,7 +3,11 @@ package de.bohnottensen.financialaudit.application.usecase.importing;
 import de.bohnottensen.financialaudit.application.ports.TransactionSourcePort;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.domain.model.BookingValidator;
+import de.bohnottensen.financialaudit.domain.model.ImportJob;
+import de.bohnottensen.financialaudit.domain.model.ImportJobProtocolEntry;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BookingRepository;
+import de.bohnottensen.financialaudit.infrastructure.persistence.ImportJobProtocolEntryRepository;
+import de.bohnottensen.financialaudit.infrastructure.persistence.ImportJobRepository;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -22,19 +26,46 @@ public class ImportOrchestratorService {
 
     private final List<TransactionSourcePort> sources;
     private final BookingRepository bookingRepository;
+    private final ImportJobRepository importJobRepository;
+    private final ImportJobProtocolEntryRepository protocolEntryRepository;
     private final BookingValidator bookingValidator = new BookingValidator();
 
-    public ImportOrchestratorService(List<TransactionSourcePort> sources, BookingRepository bookingRepository) {
+    public ImportOrchestratorService(List<TransactionSourcePort> sources,
+                                     BookingRepository bookingRepository,
+                                     ImportJobRepository importJobRepository,
+                                     ImportJobProtocolEntryRepository protocolEntryRepository) {
         this.sources = sources;
         this.bookingRepository = bookingRepository;
+        this.importJobRepository = importJobRepository;
+        this.protocolEntryRepository = protocolEntryRepository;
     }
 
     public ImportJobResult importFrom(Object source) {
+        return importFrom(new ImportRunContext("LEGACY", "LEGACY", "LEGACY", "legacy"), source);
+    }
+
+    public ImportJobResult importFrom(ImportRunContext runContext, Object source) {
         LocalDateTime startedAt = LocalDateTime.now();
+        ImportJob importJob = new ImportJob();
+        importJob.setSourceType("UNKNOWN");
+        importJob.setStatus("RUNNING");
+        importJob.setRunContext(runContext.asProtocolContext());
+        importJob.setTenantId(runContext.tenantId());
+        importJob.setProjectId(runContext.projectId());
+        importJob.setDocumentId(runContext.documentId());
+        importJob.setStartedAt(startedAt);
+        importJob.setRecordCount(0);
+        importJob.setImportedCount(0);
+        importJob.setInvalidCount(0);
+        importJob = importJobRepository.save(importJob);
+
+        try {
         TransactionSourcePort transactionSource = sources.stream()
                 .filter(port -> port.supports(source))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No import adapter supports source: " + source));
+        importJob.setSourceType(transactionSource.sourceType());
+        importJob = importJobRepository.save(importJob);
 
         List<Booking> imported = transactionSource.importTransactions(source);
         List<ImportValidationError> errors = new ArrayList<>();
@@ -60,16 +91,38 @@ public class ImportOrchestratorService {
 
         bookingRepository.saveAll(accepted);
         LocalDateTime finishedAt = LocalDateTime.now();
+        String checksum = checksum(imported);
+
+        importJob.setStatus("COMPLETED");
+        importJob.setFinishedAt(finishedAt);
+        importJob.setRecordCount(imported.size());
+        importJob.setImportedCount(accepted.size());
+        importJob.setInvalidCount(errors.size());
+        importJob.setChecksum(checksum);
+        importJobRepository.save(importJob);
+        persistValidationProtocol(importJob.getId(), errors);
 
         return new ImportJobResult(
+                importJob.getId(),
+                importJob.getStatus(),
+                importJob.getRunContext(),
                 transactionSource.sourceType(),
                 startedAt,
                 finishedAt,
                 accepted.size(),
                 errors.size(),
                 List.copyOf(errors),
-                checksum(imported)
+                checksum
         );
+        } catch (RuntimeException ex) {
+            LocalDateTime finishedAt = LocalDateTime.now();
+            importJob.setStatus("FAILED");
+            importJob.setFinishedAt(finishedAt);
+            importJob.setErrorMessage(ex.getMessage());
+            importJobRepository.save(importJob);
+            persistProtocolEntry(importJob.getId(), 0, "ERROR", ex.getMessage() == null ? "Import failed" : ex.getMessage());
+            throw ex;
+        }
     }
 
     private void findDuplicateForeignTransactionIds(List<IndexedBooking> bookings, List<ImportValidationError> errors) {
@@ -101,6 +154,22 @@ public class ImportOrchestratorService {
     }
 
     private record IndexedBooking(int index, Booking booking) {
+    }
+
+    private void persistValidationProtocol(Long jobId, List<ImportValidationError> errors) {
+        for (int i = 0; i < errors.size(); i++) {
+            ImportValidationError error = errors.get(i);
+            persistProtocolEntry(jobId, i, "VALIDATION", "index=" + error.index() + ";error=" + error.error());
+        }
+    }
+
+    private void persistProtocolEntry(Long jobId, int entryIndex, String level, String message) {
+        ImportJobProtocolEntry protocolEntry = new ImportJobProtocolEntry();
+        protocolEntry.setImportJobId(jobId);
+        protocolEntry.setEntryIndex(entryIndex);
+        protocolEntry.setLevel(level);
+        protocolEntry.setMessage(message);
+        protocolEntryRepository.save(protocolEntry);
     }
 
     private String checksum(List<Booking> bookings) {

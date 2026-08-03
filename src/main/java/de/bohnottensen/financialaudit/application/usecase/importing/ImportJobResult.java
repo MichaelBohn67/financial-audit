@@ -4,6 +4,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record ImportJobResult(
+        Long jobId,
+        String status,
+        String runContext,
         String sourceType,
         LocalDateTime startedAt,
         LocalDateTime finishedAt,

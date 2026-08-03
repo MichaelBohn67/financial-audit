@@ -121,7 +121,7 @@ Die Roadmap wurde in kleine, atomare Umsetzungsaufgaben zerlegt, damit jede Aufg
 5. [x] Ergänze Rollen- und Berechtigungsmodelle inklusive Seed-Daten für die Mindestrollen.
 6. [x] Konfiguriere Spring Security mit rollenbasierten Zugriffregeln für Mandant-, Projekt- und Dokumentebene.
 7. [x] Refaktoriere den Import-Controller so, dass er an einen Import-Use-Case-Service delegiert.
-8. Implementiere Import-Job-Tracking mit Status, Laufkontext und Protokollpersistenz.
+8. [x] Implementiere Import-Job-Tracking mit Status, Laufkontext und Protokollpersistenz.
 9. Ergänze CSV-Importvalidierungen für Vollständigkeit, Konsistenz, Duplikate und Lücken in Belegnummern.
 10. Ergänze OpenBanking-Importvalidierungen für Vollständigkeit, Konsistenz und Datenqualitätsfehler.
 11. Implementiere ein regelbasiertes Analytics-Modul für Zeitfenster-, Schwellen- und Musterregeln.

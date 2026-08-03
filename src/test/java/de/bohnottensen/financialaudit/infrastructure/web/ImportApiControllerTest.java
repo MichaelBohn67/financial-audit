@@ -2,6 +2,7 @@ package de.bohnottensen.financialaudit.infrastructure.web;
 
 import de.bohnottensen.financialaudit.application.usecase.importing.ImportJobResult;
 import de.bohnottensen.financialaudit.application.usecase.importing.ImportOrchestratorService;
+import de.bohnottensen.financialaudit.application.usecase.importing.ImportRunContext;
 import de.bohnottensen.financialaudit.application.usecase.importing.ImportValidationError;
 import de.bohnottensen.financialaudit.infrastructure.security.ScopeAccessPolicy;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,7 @@ class ImportApiControllerTest {
     @WithMockUser(roles = "ASSISTANT")
     void shouldImportCsvUsingOrchestrator() throws Exception {
         when(scopeAccessPolicy.canAccessDocument(any(), any(), any(), any())).thenReturn(true);
-        when(importOrchestratorService.importFrom(any())).thenReturn(sampleResult("CSV"));
+        when(importOrchestratorService.importFrom(any(ImportRunContext.class), any())).thenReturn(sampleResult("CSV"));
 
         MockMultipartFile file = new MockMultipartFile(
                 "file",
@@ -65,7 +66,7 @@ class ImportApiControllerTest {
     @WithMockUser(roles = "SENIOR_AUDITOR")
     void shouldImportOpenBankingUsingOrchestrator() throws Exception {
         when(scopeAccessPolicy.canAccessDocument(any(), any(), any(), any())).thenReturn(true);
-        when(importOrchestratorService.importFrom(any())).thenReturn(sampleResult("OPEN_BANKING"));
+        when(importOrchestratorService.importFrom(any(ImportRunContext.class), any())).thenReturn(sampleResult("OPEN_BANKING"));
 
         mockMvc.perform(post("/api/imports/open-banking")
                         .with(csrf())
@@ -82,6 +83,9 @@ class ImportApiControllerTest {
         LocalDateTime started = LocalDateTime.parse("2026-08-03T17:00:00");
         LocalDateTime finished = LocalDateTime.parse("2026-08-03T17:00:05");
         return new ImportJobResult(
+                42L,
+                "COMPLETED",
+                "tenantId=TENANT-1;projectId=PROJECT-1;documentId=DOC-1;label=test",
                 sourceType,
                 started,
                 finished,

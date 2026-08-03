@@ -16,24 +16,29 @@ public class AnalyticsRuleService {
     private final BookingRepository bookingRepository;
     private final FindingRepository findingRepository;
     private final AuditTrailWriter auditTrailWriter;
+    private final List<AnalyticsRule> rules;
 
     public AnalyticsRuleService(BookingRepository bookingRepository,
                                 FindingRepository findingRepository,
-                                AuditTrailWriter auditTrailWriter) {
+                                AuditTrailWriter auditTrailWriter,
+                                List<AnalyticsRule> rules) {
         this.bookingRepository = bookingRepository;
         this.findingRepository = findingRepository;
         this.auditTrailWriter = auditTrailWriter;
+        this.rules = rules;
     }
 
     public List<Finding> run(String ruleVersion, String runContext) {
         List<Finding> findings = new ArrayList<>();
-        for (Booking booking : bookingRepository.findAll()) {
-            if (booking.getAmount() != null && booking.getAmount().compareTo(java.math.BigDecimal.valueOf(100000)) > 0) {
+        List<Booking> bookings = bookingRepository.findAll();
+        for (AnalyticsRule rule : rules) {
+            List<AnalyticsRuleMatch> matches = rule.evaluate(bookings);
+            for (AnalyticsRuleMatch match : matches) {
                 Finding finding = new Finding();
-                finding.setBooking(booking);
-                finding.setRuleName("HIGH_AMOUNT_THRESHOLD");
-                finding.setAlertDescription("Booking exceeds threshold");
-                finding.setRiskLevel("HIGH");
+                finding.setBooking(match.booking());
+                finding.setRuleName(match.ruleName());
+                finding.setAlertDescription(match.alertDescription());
+                finding.setRiskLevel(match.riskLevel());
                 finding.setStatus("NEW");
                 finding.setAnalysisRunId("RULE-" + ruleVersion);
                 finding.setRuleVersion(ruleVersion);
@@ -44,30 +49,7 @@ public class AnalyticsRuleService {
                         savedFinding.getId(),
                         "FINDING_CREATED",
                         "SYSTEM_ANALYTICS",
-                        "Finding created by analytics rule HIGH_AMOUNT_THRESHOLD",
-                        null,
-                        findingSnapshot(savedFinding)
-                );
-                findings.add(savedFinding);
-            }
-
-            if (booking.getTransactionTimestamp() != null && booking.getTransactionTimestamp().getHour() >= 22) {
-                Finding finding = new Finding();
-                finding.setBooking(booking);
-                finding.setRuleName("TIME_WINDOW_RULE");
-                finding.setAlertDescription("Booking outside normal working hours");
-                finding.setRiskLevel("MEDIUM");
-                finding.setStatus("NEW");
-                finding.setAnalysisRunId("RULE-" + ruleVersion);
-                finding.setRuleVersion(ruleVersion);
-                finding.setRunContext(runContext);
-                Finding savedFinding = findingRepository.save(finding);
-                auditTrailWriter.record(
-                        "FINDING",
-                        savedFinding.getId(),
-                        "FINDING_CREATED",
-                        "SYSTEM_ANALYTICS",
-                        "Finding created by analytics rule TIME_WINDOW_RULE",
+                        "Finding created by analytics rule " + match.ruleName(),
                         null,
                         findingSnapshot(savedFinding)
                 );

@@ -1,0 +1,214 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-1-create-role-permission-table
+      author: junie
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: role_permission
+      changes:
+        - createTable:
+            tableName: role_permission
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_role_permission
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: permission_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: assigned_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: role_permission
+            baseColumnNames: role_id
+            referencedTableName: roles
+            referencedColumnNames: id
+            constraintName: fk_role_permission_on_role
+        - addForeignKeyConstraint:
+            baseTableName: role_permission
+            baseColumnNames: permission_id
+            referencedTableName: permissions
+            referencedColumnNames: id
+            constraintName: fk_role_permission_on_permission
+        - addUniqueConstraint:
+            tableName: role_permission
+            columnNames: role_id, permission_id
+            constraintName: uq_role_permission_role_permission
+
+  - changeSet:
+      id: 013-2-seed-rbac-minimum-roles
+      author: junie
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: roles
+        - tableExists:
+            tableName: permissions
+        - tableExists:
+            tableName: role_permission
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO roles (name, description, created_at)
+              SELECT 'ASSISTANT', 'Can create and update basic audit work artifacts', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM roles WHERE name = 'ASSISTANT');
+
+              INSERT INTO roles (name, description, created_at)
+              SELECT 'SENIOR_AUDITOR', 'Can review and approve audit work on senior level', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM roles WHERE name = 'SENIOR_AUDITOR');
+
+              INSERT INTO roles (name, description, created_at)
+              SELECT 'WIRTSCHAFTSPRUEFER', 'Final auditor role for statutory sign-off activities', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM roles WHERE name = 'WIRTSCHAFTSPRUEFER');
+
+              INSERT INTO roles (name, description, created_at)
+              SELECT 'ADMIN', 'Full administrative access across tenants and compliance modules', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM roles WHERE name = 'ADMIN');
+
+              INSERT INTO permissions (name, description, created_at)
+              SELECT 'BOOKING_READ', 'Read bookings', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE name = 'BOOKING_READ');
+
+              INSERT INTO permissions (name, description, created_at)
+              SELECT 'BOOKING_WRITE', 'Create and update bookings', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE name = 'BOOKING_WRITE');
+
+              INSERT INTO permissions (name, description, created_at)
+              SELECT 'FINDING_READ', 'Read findings and analytics outcomes', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE name = 'FINDING_READ');
+
+              INSERT INTO permissions (name, description, created_at)
+              SELECT 'FINDING_WRITE', 'Create and update findings', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE name = 'FINDING_WRITE');
+
+              INSERT INTO permissions (name, description, created_at)
+              SELECT 'WORKPAPER_READ', 'Read workpapers', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE name = 'WORKPAPER_READ');
+
+              INSERT INTO permissions (name, description, created_at)
+              SELECT 'WORKPAPER_WRITE', 'Create and update workpapers', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE name = 'WORKPAPER_WRITE');
+
+              INSERT INTO permissions (name, description, created_at)
+              SELECT 'WORKPAPER_REVIEW', 'Review and approve workpapers', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE name = 'WORKPAPER_REVIEW');
+
+              INSERT INTO permissions (name, description, created_at)
+              SELECT 'AUDIT_EVENT_READ', 'Read immutable audit trail events', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE name = 'AUDIT_EVENT_READ');
+
+              INSERT INTO permissions (name, description, created_at)
+              SELECT 'REPORT_RUN', 'Run and access reports', CURRENT_TIMESTAMP
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE name = 'REPORT_RUN');
+
+              INSERT INTO role_permission (role_id, permission_id, assigned_at)
+              SELECT r.id, p.id, CURRENT_TIMESTAMP
+              FROM roles r
+              JOIN permissions p ON p.name = 'BOOKING_READ'
+              WHERE r.name = 'ASSISTANT'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM role_permission rp
+                    WHERE rp.role_id = r.id
+                      AND rp.permission_id = p.id
+                );
+
+              INSERT INTO role_permission (role_id, permission_id, assigned_at)
+              SELECT r.id, p.id, CURRENT_TIMESTAMP
+              FROM roles r
+              JOIN permissions p ON p.name = 'BOOKING_WRITE'
+              WHERE r.name = 'ASSISTANT'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM role_permission rp
+                    WHERE rp.role_id = r.id
+                      AND rp.permission_id = p.id
+                );
+
+              INSERT INTO role_permission (role_id, permission_id, assigned_at)
+              SELECT r.id, p.id, CURRENT_TIMESTAMP
+              FROM roles r
+              JOIN permissions p ON p.name = 'FINDING_READ'
+              WHERE r.name = 'ASSISTANT'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM role_permission rp
+                    WHERE rp.role_id = r.id
+                      AND rp.permission_id = p.id
+                );
+
+              INSERT INTO role_permission (role_id, permission_id, assigned_at)
+              SELECT r.id, p.id, CURRENT_TIMESTAMP
+              FROM roles r
+              JOIN permissions p ON p.name = 'WORKPAPER_READ'
+              WHERE r.name = 'ASSISTANT'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM role_permission rp
+                    WHERE rp.role_id = r.id
+                      AND rp.permission_id = p.id
+                );
+
+              INSERT INTO role_permission (role_id, permission_id, assigned_at)
+              SELECT r.id, p.id, CURRENT_TIMESTAMP
+              FROM roles r
+              JOIN permissions p ON p.name = 'WORKPAPER_WRITE'
+              WHERE r.name = 'ASSISTANT'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM role_permission rp
+                    WHERE rp.role_id = r.id
+                      AND rp.permission_id = p.id
+                );
+
+              INSERT INTO role_permission (role_id, permission_id, assigned_at)
+              SELECT r.id, p.id, CURRENT_TIMESTAMP
+              FROM roles r
+              JOIN permissions p ON p.name IN ('BOOKING_READ', 'FINDING_READ', 'FINDING_WRITE', 'WORKPAPER_READ', 'WORKPAPER_REVIEW', 'REPORT_RUN')
+              WHERE r.name = 'SENIOR_AUDITOR'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM role_permission rp
+                    WHERE rp.role_id = r.id
+                      AND rp.permission_id = p.id
+                );
+
+              INSERT INTO role_permission (role_id, permission_id, assigned_at)
+              SELECT r.id, p.id, CURRENT_TIMESTAMP
+              FROM roles r
+              JOIN permissions p ON p.name IN ('BOOKING_READ', 'FINDING_READ', 'WORKPAPER_READ', 'WORKPAPER_REVIEW', 'AUDIT_EVENT_READ', 'REPORT_RUN')
+              WHERE r.name = 'WIRTSCHAFTSPRUEFER'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM role_permission rp
+                    WHERE rp.role_id = r.id
+                      AND rp.permission_id = p.id
+                );
+
+              INSERT INTO role_permission (role_id, permission_id, assigned_at)
+              SELECT r.id, p.id, CURRENT_TIMESTAMP
+              FROM roles r
+              JOIN permissions p ON 1 = 1
+              WHERE r.name = 'ADMIN'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM role_permission rp
+                    WHERE rp.role_id = r.id
+                      AND rp.permission_id = p.id
+                );

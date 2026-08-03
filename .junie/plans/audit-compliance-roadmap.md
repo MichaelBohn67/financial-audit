@@ -132,7 +132,7 @@ Die Roadmap wurde in kleine, atomare Umsetzungsaufgaben zerlegt, damit jede Aufg
 16. [x] Modelliere Workpapers, Aufgabenstatus und Review-Aktionen inklusive Zustandsübergängen.
 17. [x] Implementiere einen rollenbasierten Review-Workflow von Assistant über SeniorAuditor bis Wirtschaftspruefer.
 18. [x] Ergänze Report-Template-Versionierung und Report-Run-Persistenz.
-19. Implementiere Reporting- und Export-Use-Cases für strukturierte Berichte und Exportartefakte.
+19. [x] Implementiere Reporting- und Export-Use-Cases für strukturierte Berichte und Exportartefakte.
 20. Ergänze Integrationstests für Import, Analyse, Sampling, Workflow und Audit-Trail-Szenarien.
 
 ## Traceability Matrix

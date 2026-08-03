@@ -1,0 +1,78 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-1-create-sampling-core-tables
+      author: junie
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: sampling_runs
+      changes:
+        - createTable:
+            tableName: sampling_runs
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_sampling_runs
+              - column:
+                  name: run_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sampling_strategy
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seed
+                  type: BIGINT
+              - column:
+                  name: population_size
+                  type: BIGINT
+              - column:
+                  name: sample_size
+                  type: BIGINT
+              - column:
+                  name: parameters_json
+                  type: VARCHAR(4000)
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: materiality_configs
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_materiality_configs
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: planning_materiality
+                  type: DECIMAL(19,4)
+              - column:
+                  name: performance_materiality
+                  type: DECIMAL(19,4)
+              - column:
+                  name: tolerable_error_rate
+                  type: DECIMAL(9,4)
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false

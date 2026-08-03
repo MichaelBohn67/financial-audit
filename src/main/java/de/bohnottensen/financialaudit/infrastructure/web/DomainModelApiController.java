@@ -125,6 +125,9 @@ public class DomainModelApiController {
                 finding.getAlertDescription(),
                 finding.getRiskLevel(),
                 finding.getStatus(),
+                finding.getAnalysisRunId(),
+                finding.getRuleVersion(),
+                finding.getRunContext(),
                 finding.getAuditorComment(),
                 finding.getCreatedAt()
         );
@@ -149,6 +152,7 @@ public class DomainModelApiController {
     }
 
     public record FindingView(Long id, Long bookingId, String ruleName, String alertDescription, String riskLevel,
-                              String status, String auditorComment, LocalDateTime createdAt) {
+                              String status, String analysisRunId, String ruleVersion, String runContext,
+                              String auditorComment, LocalDateTime createdAt) {
     }
 }

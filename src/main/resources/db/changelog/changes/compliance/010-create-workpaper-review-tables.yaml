@@ -1,0 +1,90 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-1-create-workpaper-review-tables
+      author: junie
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: workpapers
+      changes:
+        - createTable:
+            tableName: workpapers
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_workpapers
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(255)
+              - column:
+                  name: assigned_to
+                  type: VARCHAR(255)
+              - column:
+                  name: project_id
+                  type: BIGINT
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: review_actions
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_review_actions
+              - column:
+                  name: workpaper_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: actor
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: comment
+                  type: VARCHAR(1024)
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: review_actions
+            baseColumnNames: workpaper_id
+            referencedTableName: workpapers
+            referencedColumnNames: id
+            constraintName: fk_review_actions_on_workpaper

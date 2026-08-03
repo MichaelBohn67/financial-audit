@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-add-analysis-metadata-to-findings
+      author: junie
+      changes:
+        - addColumn:
+            tableName: findings
+            columns:
+              - column:
+                  name: analysis_run_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    defaultValue: "LEGACY-RUN"
+              - column:
+                  name: rule_version
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    defaultValue: "legacy"
+              - column:
+                  name: run_context
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    defaultValue: "legacy"

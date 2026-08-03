@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-1-create-reporting-core-tables
+      author: junie
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: report_runs
+      changes:
+        - createTable:
+            tableName: report_runs
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_report_runs
+              - column:
+                  name: report_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: template_version
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: output_path
+                  type: VARCHAR(1024)
+              - column:
+                  name: generated_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false

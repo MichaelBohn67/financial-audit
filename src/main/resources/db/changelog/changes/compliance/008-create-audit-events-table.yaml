@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-1-create-audit-events-table
+      author: junie
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: audit_events
+      changes:
+        - createTable:
+            tableName: audit_events
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_audit_events
+              - column:
+                  name: entity_type
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entity_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: actor
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: summary
+                  type: VARCHAR(1024)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: previous_value
+                  type: VARCHAR(4000)
+              - column:
+                  name: current_value
+                  type: VARCHAR(4000)
+              - column:
+                  name: occurred_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false

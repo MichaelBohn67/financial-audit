@@ -27,6 +27,15 @@ public class Finding {
     @Column(nullable = false)
     private String status; // NEW, EVALUATED, ESCALATED, CLOSED
 
+    @Column(nullable = false)
+    private String analysisRunId;
+
+    @Column(nullable = false)
+    private String ruleVersion;
+
+    @Column(nullable = false)
+    private String runContext;
+
     private String auditorComment;
 
     @Column(nullable = false, updatable = false)
@@ -36,6 +45,9 @@ public class Finding {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         if (status == null) status = "NEW";
+        if (analysisRunId == null || analysisRunId.isBlank()) analysisRunId = "DEFAULT";
+        if (ruleVersion == null || ruleVersion.isBlank()) ruleVersion = "v0";
+        if (runContext == null || runContext.isBlank()) runContext = "default";
     }
 
     // Getters and Setters
@@ -59,6 +71,30 @@ public class Finding {
 
     public String getAuditorComment() { return auditorComment; }
     public void setAuditorComment(String auditorComment) { this.auditorComment = auditorComment; }
+
+    public String getAnalysisRunId() {
+        return analysisRunId;
+    }
+
+    public void setAnalysisRunId(String analysisRunId) {
+        this.analysisRunId = analysisRunId;
+    }
+
+    public String getRuleVersion() {
+        return ruleVersion;
+    }
+
+    public void setRuleVersion(String ruleVersion) {
+        this.ruleVersion = ruleVersion;
+    }
+
+    public String getRunContext() {
+        return runContext;
+    }
+
+    public void setRunContext(String runContext) {
+        this.runContext = runContext;
+    }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

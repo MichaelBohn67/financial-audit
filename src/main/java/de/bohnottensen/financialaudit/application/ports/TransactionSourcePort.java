@@ -8,5 +8,13 @@ import java.util.List;
  * Port for importing transaction data from various sources.
  */
 public interface TransactionSourcePort {
+    default boolean supports(Object source) {
+        return true;
+    }
+
+    default String sourceType() {
+        return getClass().getSimpleName();
+    }
+
     List<Booking> importTransactions(Object source);
 }

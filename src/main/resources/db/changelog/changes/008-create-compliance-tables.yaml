@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/changes/compliance/008-create-audit-events-table.yaml
+  - include:
+      file: db/changelog/changes/compliance/009-create-rbac-core-tables.yaml
+  - include:
+      file: db/changelog/changes/compliance/010-create-workpaper-review-tables.yaml
+  - include:
+      file: db/changelog/changes/compliance/011-create-sampling-core-tables.yaml
+  - include:
+      file: db/changelog/changes/compliance/012-create-reporting-core-tables.yaml

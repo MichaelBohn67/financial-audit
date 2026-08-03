@@ -11,3 +11,7 @@ databaseChangeLog:
       file: db/changelog/changes/005-create-findings-table.yaml
   - include:
       file: db/changelog/changes/006-add-foreign-transaction-id-to-bookings.yaml
+  - include:
+      file: db/changelog/changes/007-add-analysis-metadata-to-findings.yaml
+  - include:
+      file: db/changelog/changes/008-create-compliance-tables.yaml

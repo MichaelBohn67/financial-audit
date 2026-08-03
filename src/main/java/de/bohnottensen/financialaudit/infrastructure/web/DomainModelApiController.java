@@ -2,7 +2,9 @@ package de.bohnottensen.financialaudit.infrastructure.web;
 
 import de.bohnottensen.financialaudit.domain.model.*;
 import de.bohnottensen.financialaudit.infrastructure.persistence.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,35 +35,42 @@ public class DomainModelApiController {
     }
 
     @GetMapping("/bookings")
-    public List<BookingView> bookings() {
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
+    public List<BookingView> bookings(@RequestParam String tenantId, @RequestParam String projectId) {
         return bookingRepository.findAll().stream()
                 .map(this::toBookingView)
                 .toList();
     }
 
     @GetMapping("/account-holders")
-    public List<AccountHolderView> accountHolders() {
+    @PreAuthorize("@scopeAccessPolicy.canAccessTenant(authentication, #tenantId)")
+    public List<AccountHolderView> accountHolders(@RequestParam String tenantId) {
         return accountHolderRepository.findAll().stream()
                 .map(this::toAccountHolderView)
                 .toList();
     }
 
     @GetMapping("/accounts")
-    public List<AccountView> accounts() {
+    @PreAuthorize("@scopeAccessPolicy.canAccessTenant(authentication, #tenantId)")
+    public List<AccountView> accounts(@RequestParam String tenantId) {
         return accountRepository.findAll().stream()
                 .map(this::toAccountView)
                 .toList();
     }
 
     @GetMapping("/addresses")
-    public List<AddressView> addresses() {
+    @PreAuthorize("@scopeAccessPolicy.canAccessTenant(authentication, #tenantId)")
+    public List<AddressView> addresses(@RequestParam String tenantId) {
         return addressRepository.findAll().stream()
                 .map(this::toAddressView)
                 .toList();
     }
 
     @GetMapping("/findings")
-    public List<FindingView> findings() {
+    @PreAuthorize("@scopeAccessPolicy.canAccessDocument(authentication, #tenantId, #projectId, #documentId)")
+    public List<FindingView> findings(@RequestParam String tenantId,
+                                      @RequestParam String projectId,
+                                      @RequestParam String documentId) {
         return findingRepository.findAll().stream()
                 .map(this::toFindingView)
                 .toList();

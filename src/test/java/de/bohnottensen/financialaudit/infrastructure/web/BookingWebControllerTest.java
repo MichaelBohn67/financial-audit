@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -22,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser(roles = "ADMIN")
 class BookingWebControllerTest {
 
     @Autowired
@@ -42,7 +44,9 @@ class BookingWebControllerTest {
 
         when(bookingRepository.findAll()).thenReturn(List.of(booking));
 
-        mockMvc.perform(get("/bookings"))
+        mockMvc.perform(get("/bookings")
+                .param("tenantId", "TENANT-1")
+                .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("booking-list"))
                 .andExpect(model().attributeExists("bookings"));
@@ -50,7 +54,10 @@ class BookingWebControllerTest {
 
     @Test
     void shouldShowCreateForm() throws Exception {
-        mockMvc.perform(get("/bookings/new"))
+        mockMvc.perform(get("/bookings/new")
+                .param("tenantId", "TENANT-1")
+                .param("projectId", "PROJECT-1")
+                .param("documentId", "DOC-1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("booking-form"))
                 .andExpect(model().attributeExists("booking"));
@@ -69,6 +76,9 @@ class BookingWebControllerTest {
         when(bookingRepository.save(any(Booking.class))).thenReturn(savedBooking);
 
         mockMvc.perform(post("/bookings")
+                .param("tenantId", "TENANT-1")
+                .param("projectId", "PROJECT-1")
+                .param("documentId", "DOC-1")
                 .param("description", "New Booking")
                 .param("amount", "200.00")
                 .param("currency", "EUR")
@@ -87,7 +97,10 @@ class BookingWebControllerTest {
 
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
 
-        mockMvc.perform(get("/bookings/1/edit"))
+        mockMvc.perform(get("/bookings/1/edit")
+                .param("tenantId", "TENANT-1")
+                .param("projectId", "PROJECT-1")
+                .param("documentId", "DOC-1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("booking-form"))
                 .andExpect(model().attributeExists("booking"));

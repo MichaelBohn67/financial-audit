@@ -3,6 +3,7 @@ package de.bohnottensen.financialaudit.infrastructure.web;
 import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BookingRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -20,19 +21,30 @@ public class BookingWebController {
     }
 
     @GetMapping
-    public String listBookings(Model model) {
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
+    public String listBookings(Model model,
+                               @RequestParam String tenantId,
+                               @RequestParam String projectId) {
         model.addAttribute("bookings", bookingRepository.findAll());
         return "booking-list";
     }
 
     @GetMapping("/new")
-    public String showCreateForm(Model model) {
+    @PreAuthorize("@scopeAccessPolicy.canAccessDocument(authentication, #tenantId, #projectId, #documentId)")
+    public String showCreateForm(Model model,
+                                 @RequestParam String tenantId,
+                                 @RequestParam String projectId,
+                                 @RequestParam String documentId) {
         model.addAttribute("booking", new Booking());
         return "booking-form";
     }
 
     @PostMapping
-    public String saveBooking(@ModelAttribute Booking booking) {
+    @PreAuthorize("@scopeAccessPolicy.canAccessDocument(authentication, #tenantId, #projectId, #documentId)")
+    public String saveBooking(@ModelAttribute Booking booking,
+                              @RequestParam String tenantId,
+                              @RequestParam String projectId,
+                              @RequestParam String documentId) {
         if (booking.getTransactionTimestamp() == null) {
             booking.setTransactionTimestamp(java.time.LocalDateTime.now());
         }
@@ -50,7 +62,12 @@ public class BookingWebController {
     }
 
     @PostMapping("/{id}")
-    public String updateBooking(@PathVariable Long id, @ModelAttribute Booking booking) {
+    @PreAuthorize("@scopeAccessPolicy.canAccessDocument(authentication, #tenantId, #projectId, #documentId)")
+    public String updateBooking(@PathVariable Long id,
+                                @ModelAttribute Booking booking,
+                                @RequestParam String tenantId,
+                                @RequestParam String projectId,
+                                @RequestParam String documentId) {
         Booking previous = bookingRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid booking Id:" + id));
         String previousValue = bookingSnapshot(previous);
@@ -72,7 +89,12 @@ public class BookingWebController {
     }
 
     @GetMapping("/{id}/edit")
-    public String showEditForm(@PathVariable Long id, Model model) {
+    @PreAuthorize("@scopeAccessPolicy.canAccessDocument(authentication, #tenantId, #projectId, #documentId)")
+    public String showEditForm(@PathVariable Long id,
+                               Model model,
+                               @RequestParam String tenantId,
+                               @RequestParam String projectId,
+                               @RequestParam String documentId) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid booking Id:" + id));
         model.addAttribute("booking", booking);

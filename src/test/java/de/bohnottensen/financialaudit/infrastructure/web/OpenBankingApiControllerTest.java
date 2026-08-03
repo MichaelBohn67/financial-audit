@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -32,6 +33,7 @@ class OpenBankingApiControllerTest {
     private BookingRepository bookingRepository;
 
     @Test
+    @WithMockUser(roles = "WIRTSCHAFTSPRUEFER")
     void shouldListAccounts() throws Exception {
         Account account = new Account();
         account.setIban("DE111");
@@ -39,13 +41,15 @@ class OpenBankingApiControllerTest {
 
         when(accountRepository.findAll()).thenReturn(List.of(account));
 
-        mockMvc.perform(get("/open-banking/v1/accounts"))
+        mockMvc.perform(get("/open-banking/v1/accounts")
+                .param("tenantId", "TENANT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].accountId").value("DE111"))
                 .andExpect(jsonPath("$[0].currency").value("EUR"));
     }
 
     @Test
+    @WithMockUser(roles = "SENIOR_AUDITOR")
     void shouldFilterTransactionsByAccountId() throws Exception {
         Booking matching = new Booking();
         matching.setId(1L);
@@ -67,7 +71,10 @@ class OpenBankingApiControllerTest {
 
         when(bookingRepository.findAll()).thenReturn(List.of(matching, other));
 
-        mockMvc.perform(get("/open-banking/v1/transactions").param("accountId", "DE111"))
+        mockMvc.perform(get("/open-banking/v1/transactions")
+                .param("tenantId", "TENANT-1")
+                .param("projectId", "PROJECT-1")
+                .param("accountId", "DE111"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].transactionId").value(1))
                 .andExpect(jsonPath("$[0].sourceAccountId").value("DE111"))

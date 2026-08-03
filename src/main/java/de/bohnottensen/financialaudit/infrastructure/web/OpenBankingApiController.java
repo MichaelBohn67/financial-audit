@@ -4,6 +4,7 @@ import de.bohnottensen.financialaudit.domain.model.Account;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.infrastructure.persistence.AccountRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BookingRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,14 +27,18 @@ public class OpenBankingApiController {
     }
 
     @GetMapping("/accounts")
-    public List<OpenBankingAccountView> accounts() {
+    @PreAuthorize("@scopeAccessPolicy.canAccessTenant(authentication, #tenantId)")
+    public List<OpenBankingAccountView> accounts(@RequestParam String tenantId) {
         return accountRepository.findAll().stream()
                 .map(this::toAccountView)
                 .toList();
     }
 
     @GetMapping("/transactions")
-    public List<OpenBankingTransactionView> transactions(@RequestParam(required = false) String accountId) {
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
+    public List<OpenBankingTransactionView> transactions(@RequestParam String tenantId,
+                                                         @RequestParam String projectId,
+                                                         @RequestParam(required = false) String accountId) {
         return bookingRepository.findAll().stream()
                 .filter(booking -> accountId == null
                         || accountId.equals(booking.getSourceAccount())

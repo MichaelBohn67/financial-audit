@@ -29,22 +29,18 @@ public class SecurityConfig {
 
     @Bean
     public InMemoryUserDetailsManager userDetailsService() {
-        UserDetails assistant = User.withUsername("assistant")
-                .password("{noop}assistant")
-                .roles("ASSISTANT")
+        UserDetails auditor = User.withUsername("auditor")
+                .password("{noop}auditor")
+                .roles("AUDITOR")
                 .build();
-        UserDetails seniorAuditor = User.withUsername("senior")
-                .password("{noop}senior")
-                .roles("SENIOR_AUDITOR")
-                .build();
-        UserDetails wirtschaftspruefer = User.withUsername("wirtschaftspruefer")
-                .password("{noop}wirtschaftspruefer")
-                .roles("WIRTSCHAFTSPRUEFER")
+        UserDetails leadAuditor = User.withUsername("lead")
+                .password("{noop}lead")
+                .roles("LEAD_AUDITOR")
                 .build();
         UserDetails admin = User.withUsername("admin")
                 .password("{noop}admin")
                 .roles("ADMIN")
                 .build();
-        return new InMemoryUserDetailsManager(assistant, seniorAuditor, wirtschaftspruefer, admin);
+        return new InMemoryUserDetailsManager(auditor, leadAuditor, admin);
     }
 }

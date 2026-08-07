@@ -13,7 +13,7 @@ public class ScopeAccessPolicy {
         if (hasRole(authentication, "ADMIN")) {
             return true;
         }
-        return hasRole(authentication, "WIRTSCHAFTSPRUEFER");
+        return hasRole(authentication, "LEAD_AUDITOR");
     }
 
     public boolean canAccessProject(Authentication authentication, String tenantId, String projectId) {
@@ -23,8 +23,8 @@ public class ScopeAccessPolicy {
         if (hasRole(authentication, "ADMIN")) {
             return true;
         }
-        return hasRole(authentication, "WIRTSCHAFTSPRUEFER")
-                || hasRole(authentication, "SENIOR_AUDITOR");
+        return hasRole(authentication, "LEAD_AUDITOR")
+                || hasRole(authentication, "AUDITOR");
     }
 
     public boolean canAccessDocument(Authentication authentication, String tenantId, String projectId, String documentId) {
@@ -34,9 +34,8 @@ public class ScopeAccessPolicy {
         if (hasRole(authentication, "ADMIN")) {
             return true;
         }
-        return hasRole(authentication, "WIRTSCHAFTSPRUEFER")
-                || hasRole(authentication, "SENIOR_AUDITOR")
-                || hasRole(authentication, "ASSISTANT");
+        return hasRole(authentication, "LEAD_AUDITOR")
+                || hasRole(authentication, "AUDITOR");
     }
 
     private boolean hasRole(Authentication authentication, String role) {

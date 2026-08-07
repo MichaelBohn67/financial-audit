@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-add-balance-to-accounts
+      author: junie
+      changes:
+        - addColumn:
+            tableName: accounts
+            columns:
+              - column:
+                  name: balance
+                  type: DECIMAL(19, 2)
+                  defaultValueNumeric: 0.00
+                  constraints:
+                    nullable: false

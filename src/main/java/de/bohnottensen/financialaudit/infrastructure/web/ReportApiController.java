@@ -31,7 +31,7 @@ public class ReportApiController {
 
     /** Register a new versioned report template. Deactivates the previous active version. */
     @PostMapping("/templates")
-    @PreAuthorize("hasAnyRole('WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<ReportTemplateView> registerTemplate(
             @RequestBody RegisterTemplateRequest request) {
         ReportTemplate template = reportService.registerTemplate(
@@ -41,7 +41,7 @@ public class ReportApiController {
 
     /** List all versions of a named report template, newest first. */
     @GetMapping("/templates/{name}/versions")
-    @PreAuthorize("hasAnyRole('SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<List<ReportTemplateView>> templateVersions(@PathVariable String name) {
         List<ReportTemplate> versions = reportService.findTemplateVersions(name);
         return ResponseEntity.ok(versions.stream().map(this::toTemplateView).toList());
@@ -49,7 +49,7 @@ public class ReportApiController {
 
     /** Get the currently active template for a given name. */
     @GetMapping("/templates/{name}/active")
-    @PreAuthorize("hasAnyRole('SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<ReportTemplateView> activeTemplate(@PathVariable String name) {
         return ResponseEntity.ok(toTemplateView(reportService.findActiveTemplate(name)));
     }
@@ -62,7 +62,7 @@ public class ReportApiController {
      * is assembled and the run is completed synchronously.
      */
     @PostMapping("/runs")
-    @PreAuthorize("hasAnyRole('SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<ReportRunView> startRun(
             @RequestBody StartRunRequest request,
             @AuthenticationPrincipal UserDetails user) {
@@ -80,14 +80,14 @@ public class ReportApiController {
 
     /** Get run metadata by ID. */
     @GetMapping("/runs/{id}")
-    @PreAuthorize("hasAnyRole('ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<ReportRunView> getRun(@PathVariable Long id) {
         return ResponseEntity.ok(toRunView(reportService.findRunById(id)));
     }
 
     /** List runs filtered by status. */
     @GetMapping("/runs")
-    @PreAuthorize("hasAnyRole('SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<List<ReportRunView>> listRuns(
             @RequestParam(defaultValue = "COMPLETED") String status) {
         List<ReportRun> runs = reportService.findRunsByStatus(ReportRunStatus.valueOf(status));
@@ -99,7 +99,7 @@ public class ReportApiController {
      * Returns the assembled {@link ReportContent} as a JSON artefact.
      */
     @GetMapping("/runs/{id}/export")
-    @PreAuthorize("hasAnyRole('SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<ReportContent> exportRun(@PathVariable Long id) {
         ReportContent content = reportExportService.assemble(id);
         return ResponseEntity.ok(content);

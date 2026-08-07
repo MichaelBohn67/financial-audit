@@ -46,11 +46,11 @@ class ReportApiControllerTest {
     @MockBean
     private ReportExportService reportExportService;
 
-    // --- registerTemplate (WIRTSCHAFTSPRUEFER only) ---
+    // --- registerTemplate (LEAD_AUDITOR only) ---
 
     @Test
-    @WithMockUser(username = "wirtschaftspruefer", roles = "WIRTSCHAFTSPRUEFER")
-    void wirtschaftspruefer_shouldRegisterTemplate() throws Exception {
+    @WithMockUser(username = "lead", roles = "LEAD_AUDITOR")
+    void leadAuditor_shouldRegisterTemplate() throws Exception {
         when(reportService.registerTemplate(anyString(), anyString(), anyString()))
                 .thenReturn(template(1L, "AML-Report", "1.0.0", true));
 
@@ -66,8 +66,8 @@ class ReportApiControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
-    void assistant_shouldNotRegisterTemplate() throws Exception {
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
+    void auditor_shouldNotRegisterTemplate() throws Exception {
         mockMvc.perform(post("/api/reports/templates")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -79,7 +79,7 @@ class ReportApiControllerTest {
     // --- templateVersions ---
 
     @Test
-    @WithMockUser(username = "senior", roles = "SENIOR_AUDITOR")
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
     void shouldListTemplateVersions() throws Exception {
         when(reportService.findTemplateVersions("AML-Report"))
                 .thenReturn(List.of(
@@ -95,7 +95,7 @@ class ReportApiControllerTest {
     // --- activeTemplate ---
 
     @Test
-    @WithMockUser(username = "senior", roles = "SENIOR_AUDITOR")
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
     void shouldGetActiveTemplate() throws Exception {
         when(reportService.findActiveTemplate("AML-Report"))
                 .thenReturn(template(2L, "AML-Report", "2.0.0", true));
@@ -109,8 +109,8 @@ class ReportApiControllerTest {
     // --- startRun ---
 
     @Test
-    @WithMockUser(username = "senior", roles = "SENIOR_AUDITOR")
-    void seniorAuditor_shouldStartRun() throws Exception {
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
+    void auditor_shouldStartRun() throws Exception {
         ReportRun run = reportRun(10L, "AML-Report", "1.0.0", ReportRunStatus.RUNNING);
         ReportRun completed = reportRun(10L, "AML-Report", "1.0.0", ReportRunStatus.COMPLETED);
         when(reportService.startRun(anyString(), anyString(), anyString())).thenReturn(run);
@@ -127,8 +127,8 @@ class ReportApiControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
-    void assistant_shouldNotStartRun() throws Exception {
+    @WithMockUser(username = "user", roles = "USER")
+    void user_shouldNotStartRun() throws Exception {
         mockMvc.perform(post("/api/reports/runs")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -140,8 +140,8 @@ class ReportApiControllerTest {
     // --- getRun ---
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
-    void assistant_shouldGetRunById() throws Exception {
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
+    void auditor_shouldGetRunById() throws Exception {
         when(reportService.findRunById(5L))
                 .thenReturn(reportRun(5L, "AML-Report", "1.0.0", ReportRunStatus.COMPLETED));
 
@@ -154,7 +154,7 @@ class ReportApiControllerTest {
     // --- listRuns ---
 
     @Test
-    @WithMockUser(username = "senior", roles = "SENIOR_AUDITOR")
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
     void shouldListCompletedRuns() throws Exception {
         when(reportService.findRunsByStatus(ReportRunStatus.COMPLETED))
                 .thenReturn(List.of(reportRun(1L, "AML-Report", "1.0.0", ReportRunStatus.COMPLETED)));
@@ -167,7 +167,7 @@ class ReportApiControllerTest {
     // --- exportRun ---
 
     @Test
-    @WithMockUser(username = "senior", roles = "SENIOR_AUDITOR")
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
     void shouldExportReportContent() throws Exception {
         when(reportExportService.assemble(3L)).thenReturn(emptyContent());
 

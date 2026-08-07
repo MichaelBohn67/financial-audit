@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${report.reportName} + ' - Audit Report'">Audit Report</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #2c3e50; }
+        .header { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 5px solid #3498db; }
+        .stat-card.risk-high { border-left-color: #e74c3c; }
+        .stat-card.risk-medium { border-left-color: #f1c40f; }
+        .stat-card h3 { margin-top: 0; font-size: 0.9em; text-transform: uppercase; color: #7f8c8d; }
+        .stat-card p { font-size: 1.5em; font-weight: bold; margin: 5px 0 0 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+        th { background-color: #f2f2f2; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; }
+        .badge-high { background-color: #fdecea; color: #e74c3c; }
+        .badge-medium { background-color: #fef9e7; color: #f1c40f; }
+        .badge-low { background-color: #eaf2f8; color: #3498db; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 th:text="${report.reportName}">Report Name</h1>
+        <p>
+            <strong>Template Version:</strong> <span th:text="${report.templateVersion}">1.0</span> |
+            <strong>Generated At:</strong> <span th:text="${#temporals.format(report.generatedAt, 'yyyy-MM-dd HH:mm:ss')}">2023-01-01</span> |
+            <strong>Triggered By:</strong> <span th:text="${report.triggeredBy}">System</span>
+        </p>
+    </div>
+
+    <h2>Executive Summary</h2>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Findings</h3>
+            <p th:text="${report.findingsSummary.totalFindings}">0</p>
+        </div>
+        <div class="stat-card risk-high">
+            <h3>High Risk</h3>
+            <p th:text="${report.findingsSummary.highRisk}">0</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Bookings</h3>
+            <p th:text="${report.bookingStats.totalBookings}">0</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Amount</h3>
+            <p th:text="${#numbers.formatDecimal(report.bookingStats.totalAmount, 1, 'COMMA', 2, 'POINT')} + ' EUR'">0.00 EUR</p>
+        </div>
+    </div>
+
+    <h2>Detailed Findings</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Rule</th>
+                <th>Description</th>
+                <th>Risk Level</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="finding : ${report.findingsSummary.entries}">
+                <td th:text="${finding.id}">1</td>
+                <td th:text="${finding.ruleName}">Rule</td>
+                <td th:text="${finding.alertDescription}">Description</td>
+                <td>
+                    <span class="badge" 
+                          th:classappend="${finding.riskLevel == 'HIGH' ? 'badge-high' : (finding.riskLevel == 'MEDIUM' ? 'badge-medium' : 'badge-low')}"
+                          th:text="${finding.riskLevel}">Level</span>
+                </td>
+                <td th:text="${finding.status}">Status</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Sampling Overview</h2>
+    <table th:if="${not #lists.isEmpty(report.samplingRuns)}">
+        <thead>
+            <tr>
+                <th>Run Name</th>
+                <th>Strategy</th>
+                <th>Population</th>
+                <th>Sample Size</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="sampling : ${report.samplingRuns}">
+                <td th:text="${sampling.runName}">Run</td>
+                <td th:text="${sampling.samplingStrategy}">Strategy</td>
+                <td th:text="${sampling.populationSize}">0</td>
+                <td th:text="${sampling.sampleSize}">0</td>
+                <td th:text="${#temporals.format(sampling.createdAt, 'yyyy-MM-dd HH:mm')}">2023-01-01</td>
+            </tr>
+        </tbody>
+    </table>
+    <p th:if="${#lists.isEmpty(report.samplingRuns)}">No sampling runs recorded for this report.</p>
+
+    <div style="margin-top: 50px; font-size: 0.8em; color: #999; text-align: center;">
+        <p>This report was automatically generated for audit purposes. End of Document.</p>
+    </div>
+</body>
+</html>

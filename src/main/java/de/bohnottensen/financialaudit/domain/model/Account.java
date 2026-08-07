@@ -17,6 +17,9 @@ public class Account {
     @Column(nullable = false)
     private String currency;
 
+    @Column(nullable = false)
+    private java.math.BigDecimal balance;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "account_holder_id", nullable = false)
     private AccountHolder accountHolder;
@@ -51,6 +54,14 @@ public class Account {
 
     public void setCurrency(String currency) {
         this.currency = currency;
+    }
+
+    public java.math.BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(java.math.BigDecimal balance) {
+        this.balance = balance;
     }
 
     public AccountHolder getAccountHolder() {

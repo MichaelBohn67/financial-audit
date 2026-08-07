@@ -34,6 +34,7 @@ class AccountRepositoryTest {
         Account account = new Account();
         account.setIban("DE89370400440532013000");
         account.setCurrency("EUR");
+        account.setBalance(java.math.BigDecimal.valueOf(1000.00));
         account.setAccountHolder(accountHolder);
 
         Account savedAccount = accountRepository.save(account);

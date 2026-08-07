@@ -36,6 +36,16 @@ class BookingWebControllerTest {
     private AuditTrailWriter auditTrailWriter;
 
     @Test
+    void shouldShowHomePage() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("index"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/bookings?tenantId=TENANT-1&amp;projectId=PROJECT-1")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/bookings/new?tenantId=TENANT-1&amp;projectId=PROJECT-1&amp;documentId=DOC-1")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/api/bookings?tenantId=TENANT-1&amp;projectId=PROJECT-1")));
+    }
+
+    @Test
     void shouldListBookings() throws Exception {
         Booking booking = new Booking();
         booking.setDescription("Test Booking");

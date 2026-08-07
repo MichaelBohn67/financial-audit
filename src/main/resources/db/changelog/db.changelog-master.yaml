@@ -15,3 +15,5 @@ databaseChangeLog:
       file: db/changelog/changes/007-add-analysis-metadata-to-findings.yaml
   - include:
       file: db/changelog/changes/008-create-compliance-tables.yaml
+  - include:
+      file: db/changelog/changes/009-add-balance-to-accounts.yaml

@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-audit-plan-remediation-materiality
+      author: audit-plan
+      changes:
+        - addColumn:
+            tableName: materiality_configs
+            columns:
+              - column: {name: de_minimis_threshold, type: 'DECIMAL(19,4)', defaultValueNumeric: 0, constraints: {nullable: false}}
+              - column: {name: active, type: BOOLEAN, defaultValueBoolean: true, constraints: {nullable: false}}
+        - addColumn:
+            tableName: findings
+            columns:
+              - column: {name: workpaper_id, type: BIGINT}
+              - column: {name: remediation_owner, type: VARCHAR(255)}
+              - column: {name: remediation_due_date, type: DATE}
+              - column: {name: remediation_status, type: VARCHAR(50), defaultValue: OPEN, constraints: {nullable: false}}
+              - column: {name: remediation_plan, type: VARCHAR(4000)}
+              - column: {name: resolution_comment, type: VARCHAR(4000)}
+              - column: {name: resolved_at, type: DATETIME(6)}
+              - column: {name: resolved_by, type: VARCHAR(255)}
+        - addForeignKeyConstraint:
+            baseTableName: findings
+            baseColumnNames: workpaper_id
+            referencedTableName: workpapers
+            referencedColumnNames: id
+            constraintName: fk_findings_on_workpaper

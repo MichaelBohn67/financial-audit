@@ -1,0 +1,1 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Audit dashboard</title></head><body><h1>Audit dashboard</h1><div id="metrics">Loading…</div><script>fetch('/api/dashboard').then(r=>r.json()).then(m=>{document.getElementById('metrics').innerHTML=Object.entries(m).map(([k,v])=>`<p><strong>${k}</strong>: ${v}</p>`).join('')})</script></body></html>

@@ -12,6 +12,12 @@
 - MariaDB (Profil `mariadb`)
 - Maven
 
+## Audit-plan coverage
+
+The application now includes active materiality configuration and booking evaluation, finding-to-workpaper links with remediation lifecycle tracking, canonical `AUDITOR`/`LEAD_AUDITOR`/`ADMIN` workflow authorization, and an authenticated dashboard at `/dashboard` (`/api/dashboard`). Monetary Unit Sampling is implemented with deterministic seeds and persisted sampling items.
+
+Compliance note: materiality configuration and remediation lifecycle changes are written to the immutable audit-event table through `AuditTrailWriter`. Credentials are never included in these business snapshots. Generic persistence-wide automatic audit interception remains a follow-up hardening item.
+
 ## Voraussetzungen
 
 - JDK 26

@@ -23,7 +23,7 @@ public class WorkpaperReviewApiController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
     public ResponseEntity<WorkpaperView> create(@RequestBody CreateWorkpaperRequest request,
                                                 @AuthenticationPrincipal UserDetails user) {
         Workpaper workpaper = workpaperService.create(request.title(), user.getUsername());
@@ -31,14 +31,14 @@ public class WorkpaperReviewApiController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
     public ResponseEntity<WorkpaperView> get(@PathVariable Long id) {
         Workpaper workpaper = workpaperService.findById(id);
         return ResponseEntity.ok(toView(workpaper));
     }
 
     @GetMapping("/{id}/actions")
-    @PreAuthorize("hasAnyRole('ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
     public ResponseEntity<List<ReviewActionView>> reviewActions(@PathVariable Long id) {
         List<ReviewAction> actions = workpaperService.findReviewActions(id);
         return ResponseEntity.ok(actions.stream().map(this::toActionView).toList());
@@ -46,7 +46,7 @@ public class WorkpaperReviewApiController {
 
     /** ASSISTANT, SENIOR_AUDITOR, WIRTSCHAFTSPRUEFER: start working on a workpaper */
     @PostMapping("/{id}/start")
-    @PreAuthorize("hasAnyRole('ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
     public ResponseEntity<WorkpaperView> startProgress(@PathVariable Long id,
                                                        @AuthenticationPrincipal UserDetails user) {
         Workpaper workpaper = workpaperService.startProgress(id, user.getUsername());
@@ -55,7 +55,7 @@ public class WorkpaperReviewApiController {
 
     /** ASSISTANT, SENIOR_AUDITOR, WIRTSCHAFTSPRUEFER: submit workpaper for review */
     @PostMapping("/{id}/submit")
-    @PreAuthorize("hasAnyRole('ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
     public ResponseEntity<WorkpaperView> submit(@PathVariable Long id,
                                                 @AuthenticationPrincipal UserDetails user) {
         Workpaper workpaper = workpaperService.submit(id, user.getUsername());
@@ -64,7 +64,7 @@ public class WorkpaperReviewApiController {
 
     /** SENIOR_AUDITOR, WIRTSCHAFTSPRUEFER: send workpaper back with requested changes */
     @PostMapping("/{id}/request-changes")
-    @PreAuthorize("hasAnyRole('SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
     public ResponseEntity<WorkpaperView> requestChanges(@PathVariable Long id,
                                                         @RequestBody RequestChangesRequest request,
                                                         @AuthenticationPrincipal UserDetails user) {
@@ -74,7 +74,7 @@ public class WorkpaperReviewApiController {
 
     /** WIRTSCHAFTSPRUEFER only: final approval */
     @PostMapping("/{id}/approve")
-    @PreAuthorize("hasAnyRole('WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN', 'WIRTSCHAFTSPRUEFER')")
     public ResponseEntity<WorkpaperView> approve(@PathVariable Long id,
                                                  @AuthenticationPrincipal UserDetails user) {
         Workpaper workpaper = workpaperService.approve(id, user.getUsername());

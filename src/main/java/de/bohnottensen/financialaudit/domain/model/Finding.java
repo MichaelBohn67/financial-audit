@@ -15,6 +15,18 @@ public class Finding {
     @JoinColumn(name = "booking_id", nullable = false)
     private Booking booking;
 
+    @ManyToOne
+    @JoinColumn(name = "workpaper_id")
+    private Workpaper workpaper;
+
+    @Column(name = "remediation_owner") private String remediationOwner;
+    @Column(name = "remediation_due_date") private java.time.LocalDate remediationDueDate;
+    @Column(name = "remediation_status", nullable = false) private String remediationStatus = "OPEN";
+    @Column(name = "remediation_plan", length = 4000) private String remediationPlan;
+    @Column(name = "resolution_comment", length = 4000) private String resolutionComment;
+    @Column(name = "resolved_at") private LocalDateTime resolvedAt;
+    @Column(name = "resolved_by") private String resolvedBy;
+
     @Column(nullable = false)
     private String ruleName;
 
@@ -56,6 +68,22 @@ public class Finding {
 
     public Booking getBooking() { return booking; }
     public void setBooking(Booking booking) { this.booking = booking; }
+    public Workpaper getWorkpaper() { return workpaper; }
+    public void setWorkpaper(Workpaper workpaper) { this.workpaper = workpaper; }
+    public String getRemediationOwner() { return remediationOwner; }
+    public void setRemediationOwner(String value) { remediationOwner = value; }
+    public java.time.LocalDate getRemediationDueDate() { return remediationDueDate; }
+    public void setRemediationDueDate(java.time.LocalDate value) { remediationDueDate = value; }
+    public String getRemediationStatus() { return remediationStatus; }
+    public void setRemediationStatus(String value) { remediationStatus = value; }
+    public String getRemediationPlan() { return remediationPlan; }
+    public void setRemediationPlan(String value) { remediationPlan = value; }
+    public String getResolutionComment() { return resolutionComment; }
+    public void setResolutionComment(String value) { resolutionComment = value; }
+    public LocalDateTime getResolvedAt() { return resolvedAt; }
+    public void setResolvedAt(LocalDateTime value) { resolvedAt = value; }
+    public String getResolvedBy() { return resolvedBy; }
+    public void setResolvedBy(String value) { resolvedBy = value; }
 
     public String getRuleName() { return ruleName; }
     public void setRuleName(String ruleName) { this.ruleName = ruleName; }

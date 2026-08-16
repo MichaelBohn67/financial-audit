@@ -29,7 +29,7 @@ public class WorkpaperService {
         this.auditTrailWriter = auditTrailWriter;
     }
 
-    @PreAuthorize("hasAnyRole('ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
     public Workpaper create(String title, String createdBy) {
         Workpaper workpaper = new Workpaper();
         workpaper.setTitle(title);
@@ -49,32 +49,32 @@ public class WorkpaperService {
         return savedWorkpaper;
     }
 
-    @PreAuthorize("hasAnyRole('ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
     public Workpaper startProgress(Long workpaperId, String actor) {
         return transition(workpaperId, actor, ReviewActionType.START, WorkpaperStatus.IN_PROGRESS, "Workpaper progress started");
     }
 
-    @PreAuthorize("hasAnyRole('ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
     public Workpaper submit(Long workpaperId, String actor) {
         return transition(workpaperId, actor, ReviewActionType.SUBMIT, WorkpaperStatus.SUBMITTED, "Workpaper submitted");
     }
 
-    @PreAuthorize("hasAnyRole('SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
     public Workpaper requestChanges(Long workpaperId, String actor, String comment) {
         return transition(workpaperId, actor, ReviewActionType.REQUEST_CHANGES, WorkpaperStatus.CHANGES_REQUESTED, comment);
     }
 
-    @PreAuthorize("hasAnyRole('WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN', 'WIRTSCHAFTSPRUEFER')")
     public Workpaper approve(Long workpaperId, String actor) {
         return transition(workpaperId, actor, ReviewActionType.APPROVE, WorkpaperStatus.APPROVED, "Workpaper approved");
     }
 
-    @PreAuthorize("hasAnyRole('ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
     public Workpaper findById(Long workpaperId) {
         return workpaperRepository.findById(workpaperId).orElseThrow();
     }
 
-    @PreAuthorize("hasAnyRole('ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
     public List<ReviewAction> findReviewActions(Long workpaperId) {
         Workpaper workpaper = workpaperRepository.findById(workpaperId).orElseThrow();
         return reviewActionRepository.findByWorkpaper(workpaper);

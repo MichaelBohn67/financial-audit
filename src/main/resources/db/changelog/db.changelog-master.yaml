@@ -17,3 +17,5 @@ databaseChangeLog:
       file: db/changelog/changes/008-create-compliance-tables.yaml
   - include:
       file: db/changelog/changes/009-add-balance-to-accounts.yaml
+  - include:
+      file: db/changelog/changes/019-audit-plan-remediation-materiality.yaml

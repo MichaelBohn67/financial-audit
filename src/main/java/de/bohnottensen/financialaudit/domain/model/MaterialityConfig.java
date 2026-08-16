@@ -28,6 +28,12 @@ public class MaterialityConfig {
     @Column(name = "performance_materiality")
     private BigDecimal performanceMateriality;
 
+    @Column(name = "de_minimis_threshold", nullable = false)
+    private BigDecimal deMinimisThreshold;
+
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
+
     @Column(name = "tolerable_error_rate")
     private BigDecimal tolerableErrorRate;
 
@@ -72,6 +78,11 @@ public class MaterialityConfig {
     public void setPerformanceMateriality(BigDecimal performanceMateriality) {
         this.performanceMateriality = performanceMateriality;
     }
+
+    public BigDecimal getDeMinimisThreshold() { return deMinimisThreshold; }
+    public void setDeMinimisThreshold(BigDecimal value) { this.deMinimisThreshold = value; }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
 
     public BigDecimal getTolerableErrorRate() {
         return tolerableErrorRate;

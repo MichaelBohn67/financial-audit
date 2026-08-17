@@ -50,6 +50,10 @@ public class SamplingService {
         if (population.isEmpty()) {
             throw new IllegalArgumentException("No positive booking amounts available for MUS sampling");
         }
+        if (sampleSize > population.size()) {
+            throw new IllegalArgumentException(
+                    "MUS sampleSize must be <= effective population size; oversized samples are rejected to prevent implicit duplicate records");
+        }
 
         BigDecimal totalAmount = population.stream()
                 .map(Booking::getAmount)
@@ -73,7 +77,9 @@ public class SamplingService {
                 + ",\"sampleSize\":" + sampleSize
                 + ",\"totalAmount\":\"" + totalAmount + "\""
                 + ",\"interval\":\"" + interval + "\""
-                + ",\"startPoint\":\"" + randomStart + "\"}");
+                + ",\"startPoint\":\"" + randomStart + "\""
+                + ",\"oversizedSamplePolicy\":\"REJECT\""
+                + ",\"duplicateSelectionPolicy\":\"ALLOW_MULTIPLE_POINTS_PER_BOOKING\"}");
 
         SamplingRun savedRun = samplingRunRepository.save(run);
 
@@ -99,24 +105,6 @@ public class SamplingService {
             }
             if (sampleUnit >= sampleSize) {
                 break;
-            }
-        }
-
-        if (sampleUnit < sampleSize) {
-            Booking last = population.get(population.size() - 1);
-            while (sampleUnit < sampleSize) {
-                SamplingRunItem item = new SamplingRunItem();
-                item.setSamplingRunId(savedRun.getId());
-                item.setSampleUnitIndex(sampleUnit);
-                item.setSelectionPoint(selectionPoint);
-                item.setBookingId(last.getId());
-                item.setBookingAmount(last.getAmount());
-                item.setCumulativeAmount(totalAmount);
-                samplingRunItemRepository.save(item);
-
-                sampleUnit++;
-                selectionPoint = randomStart.add(interval.multiply(BigDecimal.valueOf(sampleUnit)))
-                        .setScale(INTERVAL_SCALE, RoundingMode.HALF_UP);
             }
         }
 

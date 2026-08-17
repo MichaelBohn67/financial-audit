@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUS sampling</title>
+    <style>body{font-family:system-ui,sans-serif;margin:2rem auto;max-width:900px;padding:0 1rem}label{display:block;margin:.7rem 0}input{display:block;padding:.4rem;width:20rem;max-width:100%}button{margin-top:.5rem;padding:.5rem .8rem}.error{color:#b42318}.success{color:#067647}table{border-collapse:collapse;margin-top:1rem;width:100%}td,th{border-bottom:1px solid #ddd;padding:.5rem;text-align:left}</style>
+</head>
+<body>
+<h1>Monetary Unit Sampling</h1>
+<p>MUS rejects samples larger than the effective positive-booking population. Multiple selection points may identify one high-value booking.</p>
+<form id="musForm">
+    <label>Run name <input name="runName" required></label>
+    <label>Requested population size <input name="populationSize" type="number" min="1" required></label>
+    <label>Sample size <input name="sampleSize" type="number" min="1" required></label>
+    <label>Seed <input name="seed" type="number" value="42" required></label>
+    <button type="submit">Generate MUS sample</button>
+</form>
+<p id="message" role="status"></p>
+<table><thead><tr><th>Run</th><th>Strategy</th><th>Population</th><th>Sample</th><th>Created</th></tr></thead><tbody id="runs"><tr><td colspan="5">Loading…</td></tr></tbody></table>
+<script>
+const form = document.getElementById('musForm'), message = document.getElementById('message'), runs = document.getElementById('runs');
+const show = (value, className) => { message.textContent = value; message.className = className || ''; };
+const cell = (row, value) => { const td = document.createElement('td'); td.textContent = value ?? '—'; row.append(td); };
+function loadRuns() { fetch('/api/sampling/runs').then(r => r.json()).then(data => { runs.replaceChildren(); data.filter(r => r.samplingStrategy === 'MUS').forEach(run => { const tr = document.createElement('tr'); cell(tr, run.runName); cell(tr, run.samplingStrategy); cell(tr, run.populationSize); cell(tr, run.sampleSize); cell(tr, run.createdAt); runs.append(tr); }); if (!runs.children.length) runs.innerHTML = '<tr><td colspan="5">No MUS runs yet.</td></tr>'; }).catch(() => show('Unable to load sampling runs.', 'error')); }
+form.addEventListener('submit', event => { event.preventDefault(); const body = Object.fromEntries(new FormData(form)); body.populationSize = Number(body.populationSize); body.sampleSize = Number(body.sampleSize); body.seed = Number(body.seed); fetch('/api/sampling/mus', {method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, body:JSON.stringify(body)}).then(async response => { const data = await response.json(); if (!response.ok) throw new Error(data.message || 'Sampling failed'); return data; }).then(run => { show(`Created ${run.runName} with ${run.sampleSize} selection points.`, 'success'); loadRuns(); }).catch(error => show(error.message, 'error')); });
+loadRuns();
+</script>
+</body>
+</html>

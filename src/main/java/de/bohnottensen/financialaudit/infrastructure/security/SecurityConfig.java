@@ -20,6 +20,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/bookings/**").authenticated()
                         .requestMatchers("/dashboard").authenticated()
+                        .requestMatchers("/sampling").authenticated()
                         .requestMatchers("/api/**", "/open-banking/**").authenticated()
                         .anyRequest().permitAll()
                 )

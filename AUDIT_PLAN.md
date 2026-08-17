@@ -12,7 +12,7 @@ A production-ready financial audit application should cover:
 
 ## 2. Current Implementation Status
 
-Last validated: 2026-08-17. `mvn test` passes with 110 tests, but passing tests do not establish completion of the full plan.
+Last validated: 2026-08-17. `mvn test` passes with 119 tests, but passing tests do not establish completion of the full plan.
 
 | Feature | Status | Details |
 | :--- | :--- | :--- |
@@ -21,7 +21,7 @@ Last validated: 2026-08-17. `mvn test` passes with 110 tests, but passing tests 
 | Pattern analysis | Completed | Repeated-amount and timing analysis are implemented. |
 | Rule engine | Completed | `AmlEngine` and `AnalyticsRuleService` provide rule-based checks. |
 | Reconciliation | Completed | `ReconciliationService` compares account balances with booking sums. |
-| Sampling | Partial | Random, stratified, and deterministic MUS sampling persist runs/items. MUS edge handling, exposure, and audit logging remain incomplete. |
+| Sampling | Completed | Random, stratified, and deterministic MUS sampling persist runs/items; MUS has explicit oversized-sample and duplicate-selection policies, validated API/UI exposure, and audit-event coverage. |
 | Workpapers | Completed | Canonical `AUDITOR`/`LEAD_AUDITOR`/`ADMIN` authorization, approval, distinct sign-off, legal transitions, audit events, and review actions are implemented. |
 | Reporting | Completed | `ReportService`, `ReportExportService`, and Thymeleaf report views exist. |
 | Materiality | Partial | Configuration, active-config retrieval, validation, classification, idempotent finding persistence, and audit events exist. API documentation and broader scope behavior remain to be completed. |
@@ -33,7 +33,7 @@ Last validated: 2026-08-17. `mvn test` passes with 110 tests, but passing tests 
 
 - Liquibase migration `019-audit-plan-remediation-materiality` adds materiality activation/de minimis fields and finding remediation/workpaper-link fields.
 - Spring Security provides `AUDITOR`, `LEAD_AUDITOR`, and `ADMIN` users, although service-level workpaper authorization still accepts additional legacy roles.
-- Existing integration tests cover importing, analytics, sampling persistence, workpaper workflow, explicit audit-event writing, automatic persistence audit events, and dashboard security/metrics behavior.
+- Existing integration tests cover importing, analytics, sampling persistence and audit events, workpaper workflow, explicit audit-event writing, automatic persistence audit events, and dashboard security/metrics behavior.
 
 ## 4. Remaining Work
 
@@ -60,13 +60,11 @@ Dashboard metrics, repository queries, typed DTOs, visualizations, page/API role
 
 ### F. Sampling hardening
 
-1. Define behavior when MUS sample size exceeds the effective population; do not silently create duplicate selections without an explicit documented policy.
-2. Test zero/negative amounts, duplicate high-value selections, oversized samples, and deterministic seeds.
-3. Expose MUS through an API/UI, validate parameters, document assumptions, and audit sampling-run creation.
+MUS hardening is implemented. Samples larger than the effective positive-booking population are rejected. Multiple selection points for one high-value booking remain explicitly allowed and are recorded in run metadata as `ALLOW_MULTIPLE_POINTS_PER_BOOKING`. The MUS API (`/api/sampling/mus`), run/item endpoints, protected UI (`/sampling`), request validation, deterministic/edge-case tests, and automatic `SamplingRun` creation audit events are implemented.
 
 ## 5. Verification Notes
 
-- `mvn test`: 110 tests passed, 0 failures, 0 errors.
+- `mvn test`: 119 tests passed, 0 failures, 0 errors.
 - Liquibase migrations apply successfully to the H2 test database from an empty schema.
 - Materiality classification, persisted findings, idempotency, migration behavior, and audit events are now covered by dedicated unit/integration tests.
 - Dashboard metrics, page rendering, visualizations, and API/page authorization are covered by dedicated tests.
@@ -76,4 +74,4 @@ Dashboard metrics, repository queries, typed DTOs, visualizations, page/API role
 
 1. [x] Implement automatic audit interception and snapshot/actor tests.
 2. [x] Complete dashboard metrics, visualizations, protection, and tests.
-3. Harden and expose MUS, then run final verification and update this plan.
+3. [x] Harden and expose MUS, then run final verification and update this plan.

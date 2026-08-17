@@ -5,6 +5,7 @@ import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.domain.model.SamplingRun;
 import de.bohnottensen.financialaudit.domain.model.SamplingRunItem;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BookingRepository;
+import de.bohnottensen.financialaudit.infrastructure.persistence.AuditEventRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.SamplingRunItemRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.SamplingRunRepository;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,9 @@ class SamplingIntegrationTest {
     @Autowired
     private SamplingRunItemRepository samplingRunItemRepository;
 
+    @Autowired
+    private AuditEventRepository auditEventRepository;
+
     @Test
     void shouldGenerateMusSampleWithCorrectSizeAndPersistItems() {
         seedBookings(10);
@@ -53,6 +57,10 @@ class SamplingIntegrationTest {
         assertThat(samplingRunRepository.findById(run.getId())).isPresent();
         List<SamplingRunItem> items = samplingRunItemRepository.findAll();
         assertThat(items).hasSize(3);
+        assertThat(auditEventRepository.findAll()).anyMatch(event ->
+                "SamplingRun".equals(event.getEntityType())
+                        && run.getId().equals(event.getEntityId())
+                        && "PERSISTENCE_CREATE".equals(event.getEventType()));
     }
 
     @Test

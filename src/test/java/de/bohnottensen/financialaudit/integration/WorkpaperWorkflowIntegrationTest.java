@@ -42,7 +42,7 @@ class WorkpaperWorkflowIntegrationTest {
     private AuditEventRepository auditEventRepository;
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
+    @WithMockUser(username = "assistant", roles = "AUDITOR")
     void shouldCompleteFullWorkflowAssistantToApproval() {
         long auditEventsBefore = auditEventRepository.count();
 
@@ -62,7 +62,7 @@ class WorkpaperWorkflowIntegrationTest {
         assertThat(wp.getStatus()).isEqualTo(WorkpaperStatus.SUBMITTED.name());
 
         // 4. Senior requests changes
-        wp = withRole("senior", "ROLE_SENIOR_AUDITOR",
+        wp = withRole("senior", "ROLE_LEAD_AUDITOR",
                 () -> workpaperService.requestChanges(id, "senior", "Need more evidence"));
         assertThat(wp.getStatus()).isEqualTo(WorkpaperStatus.CHANGES_REQUESTED.name());
 
@@ -72,27 +72,34 @@ class WorkpaperWorkflowIntegrationTest {
         assertThat(wp.getStatus()).isEqualTo(WorkpaperStatus.SUBMITTED.name());
 
         // 6. Wirtschaftspruefer gives final approval
-        wp = withRole("wirtschaftspruefer", "ROLE_WIRTSCHAFTSPRUEFER",
+        wp = withRole("wirtschaftspruefer", "ROLE_LEAD_AUDITOR",
                 () -> workpaperService.approve(id, "wirtschaftspruefer"));
         assertThat(wp.getStatus()).isEqualTo(WorkpaperStatus.APPROVED.name());
 
-        // ReviewActions: CREATE, START, SUBMIT, REQUEST_CHANGES, START, SUBMIT, APPROVE = 7
+        wp = withRole("wirtschaftspruefer", "ROLE_LEAD_AUDITOR",
+                () -> workpaperService.signOff(id, "wirtschaftspruefer"));
+        assertThat(wp.getStatus()).isEqualTo(WorkpaperStatus.SIGNED_OFF.name());
+
+        // ReviewActions: CREATE, START, SUBMIT, REQUEST_CHANGES, START, SUBMIT, APPROVE, SIGN_OFF = 8
         var actions = reviewActionRepository.findByWorkpaper(
                 workpaperRepository.findById(id).orElseThrow());
-        assertThat(actions).hasSize(7);
+        assertThat(actions).hasSize(8);
         assertThat(actions.stream().map(a -> a.getAction()).toList())
-                .containsExactly("CREATE", "START", "SUBMIT", "REQUEST_CHANGES", "START", "SUBMIT", "APPROVE");
+                .containsExactly("CREATE", "START", "SUBMIT", "REQUEST_CHANGES", "START", "SUBMIT", "APPROVE", "SIGN_OFF");
 
-        // AuditTrail events must be written for each step (7 steps + CREATE = 7 total)
-        assertThat(auditEventRepository.count()).isGreaterThan(auditEventsBefore + 6);
+        // AuditTrail events must be written for each step.
+        assertThat(auditEventRepository.count()).isGreaterThan(auditEventsBefore + 7);
         assertThat(auditEventRepository.findAll()).anyMatch(e ->
                 "WORKPAPER".equals(e.getEntityType())
                         && "WORKPAPER_APPROVE".equals(e.getEventType())
                         && "wirtschaftspruefer".equals(e.getActor()));
+        assertThat(auditEventRepository.findAll()).anyMatch(e ->
+                "WORKPAPER".equals(e.getEntityType())
+                        && "WORKPAPER_SIGN_OFF".equals(e.getEventType()));
     }
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
+    @WithMockUser(username = "assistant", roles = "AUDITOR")
     void shouldPersistWorkpaperInRepository() {
         workpaperService.create("Sampling Review", "assistant");
         workpaperService.create("AML Review", "assistant");
@@ -101,26 +108,26 @@ class WorkpaperWorkflowIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
+    @WithMockUser(username = "assistant", roles = "AUDITOR")
     void shouldRejectInvalidStateTransition() {
         Workpaper wp = workpaperService.create("Invalid Transition Test", "assistant");
         Long id = wp.getId();
 
         // Cannot approve directly from DRAFT
-        assertThatThrownBy(() -> withRole("wirtschaftspruefer", "ROLE_WIRTSCHAFTSPRUEFER",
+            assertThatThrownBy(() -> withRole("wirtschaftspruefer", "ROLE_LEAD_AUDITOR",
                 () -> workpaperService.approve(id, "wirtschaftspruefer")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Invalid workpaper transition");
     }
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
+    @WithMockUser(username = "assistant", roles = "AUDITOR")
     void shouldRecordCorrectActorInEachReviewAction() {
         Workpaper wp = workpaperService.create("Actor Test WP", "assistant");
         Long id = wp.getId();
         workpaperService.startProgress(id, "assistant");
         workpaperService.submit(id, "assistant");
-        withRole("senior", "ROLE_SENIOR_AUDITOR",
+        withRole("senior", "ROLE_LEAD_AUDITOR",
                 () -> workpaperService.requestChanges(id, "senior", "More detail please"));
 
         var actions = reviewActionRepository.findByWorkpaper(

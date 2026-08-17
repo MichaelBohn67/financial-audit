@@ -19,3 +19,5 @@ databaseChangeLog:
       file: db/changelog/changes/009-add-balance-to-accounts.yaml
   - include:
       file: db/changelog/changes/019-audit-plan-remediation-materiality.yaml
+  - include:
+      file: db/changelog/changes/020-materiality-finding-metadata.yaml

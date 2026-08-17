@@ -5,5 +5,6 @@ public enum WorkpaperStatus {
     IN_PROGRESS,
     SUBMITTED,
     CHANGES_REQUESTED,
-    APPROVED
+    APPROVED,
+    SIGNED_OFF
 }

@@ -23,7 +23,7 @@ public class WorkpaperReviewApiController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<WorkpaperView> create(@RequestBody CreateWorkpaperRequest request,
                                                 @AuthenticationPrincipal UserDetails user) {
         Workpaper workpaper = workpaperService.create(request.title(), user.getUsername());
@@ -31,40 +31,40 @@ public class WorkpaperReviewApiController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<WorkpaperView> get(@PathVariable Long id) {
         Workpaper workpaper = workpaperService.findById(id);
         return ResponseEntity.ok(toView(workpaper));
     }
 
     @GetMapping("/{id}/actions")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<List<ReviewActionView>> reviewActions(@PathVariable Long id) {
         List<ReviewAction> actions = workpaperService.findReviewActions(id);
         return ResponseEntity.ok(actions.stream().map(this::toActionView).toList());
     }
 
-    /** ASSISTANT, SENIOR_AUDITOR, WIRTSCHAFTSPRUEFER: start working on a workpaper */
+    /** AUDITOR, LEAD_AUDITOR, ADMIN: start working on a workpaper */
     @PostMapping("/{id}/start")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<WorkpaperView> startProgress(@PathVariable Long id,
                                                        @AuthenticationPrincipal UserDetails user) {
         Workpaper workpaper = workpaperService.startProgress(id, user.getUsername());
         return ResponseEntity.ok(toView(workpaper));
     }
 
-    /** ASSISTANT, SENIOR_AUDITOR, WIRTSCHAFTSPRUEFER: submit workpaper for review */
+    /** AUDITOR, LEAD_AUDITOR, ADMIN: submit workpaper for review */
     @PostMapping("/{id}/submit")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<WorkpaperView> submit(@PathVariable Long id,
                                                 @AuthenticationPrincipal UserDetails user) {
         Workpaper workpaper = workpaperService.submit(id, user.getUsername());
         return ResponseEntity.ok(toView(workpaper));
     }
 
-    /** SENIOR_AUDITOR, WIRTSCHAFTSPRUEFER: send workpaper back with requested changes */
+    /** LEAD_AUDITOR, ADMIN: send workpaper back with requested changes */
     @PostMapping("/{id}/request-changes")
-    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<WorkpaperView> requestChanges(@PathVariable Long id,
                                                         @RequestBody RequestChangesRequest request,
                                                         @AuthenticationPrincipal UserDetails user) {
@@ -72,12 +72,20 @@ public class WorkpaperReviewApiController {
         return ResponseEntity.ok(toView(workpaper));
     }
 
-    /** WIRTSCHAFTSPRUEFER only: final approval */
+    /** LEAD_AUDITOR, ADMIN: approve a submitted workpaper */
     @PostMapping("/{id}/approve")
-    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<WorkpaperView> approve(@PathVariable Long id,
                                                  @AuthenticationPrincipal UserDetails user) {
         Workpaper workpaper = workpaperService.approve(id, user.getUsername());
+        return ResponseEntity.ok(toView(workpaper));
+    }
+
+    @PostMapping("/{id}/sign-off")
+    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN')")
+    public ResponseEntity<WorkpaperView> signOff(@PathVariable Long id,
+                                                 @AuthenticationPrincipal UserDetails user) {
+        Workpaper workpaper = workpaperService.signOff(id, user.getUsername());
         return ResponseEntity.ok(toView(workpaper));
     }
 

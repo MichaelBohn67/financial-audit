@@ -41,7 +41,7 @@ class WorkpaperReviewApiControllerTest {
     // --- create ---
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
+    @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldCreateWorkpaper() throws Exception {
         when(workpaperService.create(anyString(), anyString())).thenReturn(workpaper(1L, "WP-1", "DRAFT", "assistant"));
 
@@ -57,7 +57,7 @@ class WorkpaperReviewApiControllerTest {
     // --- startProgress ---
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
+    @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldStartProgress() throws Exception {
         when(workpaperService.startProgress(anyLong(), anyString())).thenReturn(workpaper(1L, "WP-1", "IN_PROGRESS", "assistant"));
 
@@ -70,7 +70,7 @@ class WorkpaperReviewApiControllerTest {
     // --- submit ---
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
+    @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldSubmitWorkpaper() throws Exception {
         when(workpaperService.submit(anyLong(), anyString())).thenReturn(workpaper(1L, "WP-1", "SUBMITTED", "assistant"));
 
@@ -83,7 +83,7 @@ class WorkpaperReviewApiControllerTest {
     // --- requestChanges (SENIOR_AUDITOR) ---
 
     @Test
-    @WithMockUser(username = "senior", roles = "SENIOR_AUDITOR")
+    @WithMockUser(username = "senior", roles = "LEAD_AUDITOR")
     void seniorAuditorShouldRequestChanges() throws Exception {
         when(workpaperService.requestChanges(anyLong(), anyString(), anyString()))
                 .thenReturn(workpaper(1L, "WP-1", "CHANGES_REQUESTED", "senior"));
@@ -97,7 +97,7 @@ class WorkpaperReviewApiControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
+    @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldNotBeAllowedToRequestChanges() throws Exception {
         mockMvc.perform(post("/api/workpapers/1/request-changes")
                         .with(csrf())
@@ -109,7 +109,7 @@ class WorkpaperReviewApiControllerTest {
     // --- approve (WIRTSCHAFTSPRUEFER only) ---
 
     @Test
-    @WithMockUser(username = "wirtschaftspruefer", roles = "WIRTSCHAFTSPRUEFER")
+    @WithMockUser(username = "wirtschaftspruefer", roles = "LEAD_AUDITOR")
     void wirtschaftspruefer_shouldApproveWorkpaper() throws Exception {
         when(workpaperService.approve(anyLong(), anyString()))
                 .thenReturn(workpaper(1L, "WP-1", "APPROVED", "wirtschaftspruefer"));
@@ -121,7 +121,7 @@ class WorkpaperReviewApiControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
+    @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldNotBeAllowedToApprove() throws Exception {
         mockMvc.perform(post("/api/workpapers/1/approve")
                         .with(csrf()))
@@ -129,7 +129,19 @@ class WorkpaperReviewApiControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "senior", roles = "SENIOR_AUDITOR")
+    @WithMockUser(username = "lead", roles = "LEAD_AUDITOR")
+    void leadAuditorShouldSignOffApprovedWorkpaper() throws Exception {
+        when(workpaperService.signOff(anyLong(), anyString()))
+                .thenReturn(workpaper(1L, "WP-1", "SIGNED_OFF", "lead"));
+
+        mockMvc.perform(post("/api/workpapers/1/sign-off")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SIGNED_OFF"));
+    }
+
+    @Test
+    @WithMockUser(username = "senior", roles = "AUDITOR")
     void seniorAuditorShouldNotBeAllowedToApprove() throws Exception {
         mockMvc.perform(post("/api/workpapers/1/approve")
                         .with(csrf()))
@@ -139,7 +151,7 @@ class WorkpaperReviewApiControllerTest {
     // --- get & review actions (any authenticated role) ---
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
+    @WithMockUser(username = "assistant", roles = "AUDITOR")
     void shouldGetWorkpaperById() throws Exception {
         when(workpaperService.findById(1L)).thenReturn(workpaper(1L, "WP-1", "DRAFT", "assistant"));
 
@@ -150,7 +162,7 @@ class WorkpaperReviewApiControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "assistant", roles = "ASSISTANT")
+    @WithMockUser(username = "assistant", roles = "AUDITOR")
     void shouldReturnReviewActionHistory() throws Exception {
         when(workpaperService.findReviewActions(1L)).thenReturn(List.of(reviewAction("assistant", "START")));
 

@@ -50,10 +50,11 @@ class WorkpaperServiceTest {
         service.startProgress(10L, "assistant");
         service.submit(10L, "assistant");
         service.approve(10L, "wirtschaftspruefer");
+        service.signOff(10L, "wirtschaftspruefer");
 
-        assertThat(workpaper.getStatus()).isEqualTo("APPROVED");
+        assertThat(workpaper.getStatus()).isEqualTo("SIGNED_OFF");
         assertThat(actions.stream().map(ReviewAction::getAction).toList())
-                .containsExactly("START", "SUBMIT", "REQUEST_CHANGES", "START", "SUBMIT", "APPROVE");
+                .containsExactly("START", "SUBMIT", "REQUEST_CHANGES", "START", "SUBMIT", "APPROVE", "SIGN_OFF");
     }
 
     @Test

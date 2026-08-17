@@ -5,5 +5,6 @@ public enum ReviewActionType {
     START,
     SUBMIT,
     REQUEST_CHANGES,
-    APPROVE
+    APPROVE,
+    SIGN_OFF
 }

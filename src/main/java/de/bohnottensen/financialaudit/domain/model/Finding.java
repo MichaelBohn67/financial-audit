@@ -19,6 +19,13 @@ public class Finding {
     @JoinColumn(name = "workpaper_id")
     private Workpaper workpaper;
 
+    @ManyToOne
+    @JoinColumn(name = "materiality_config_id")
+    private MaterialityConfig materialityConfig;
+
+    @Column(name = "materiality_classification")
+    private String materialityClassification;
+
     @Column(name = "remediation_owner") private String remediationOwner;
     @Column(name = "remediation_due_date") private java.time.LocalDate remediationDueDate;
     @Column(name = "remediation_status", nullable = false) private String remediationStatus = "OPEN";
@@ -70,6 +77,10 @@ public class Finding {
     public void setBooking(Booking booking) { this.booking = booking; }
     public Workpaper getWorkpaper() { return workpaper; }
     public void setWorkpaper(Workpaper workpaper) { this.workpaper = workpaper; }
+    public MaterialityConfig getMaterialityConfig() { return materialityConfig; }
+    public void setMaterialityConfig(MaterialityConfig materialityConfig) { this.materialityConfig = materialityConfig; }
+    public String getMaterialityClassification() { return materialityClassification; }
+    public void setMaterialityClassification(String value) { materialityClassification = value; }
     public String getRemediationOwner() { return remediationOwner; }
     public void setRemediationOwner(String value) { remediationOwner = value; }
     public java.time.LocalDate getRemediationDueDate() { return remediationDueDate; }

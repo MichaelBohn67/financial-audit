@@ -29,7 +29,7 @@ public class WorkpaperService {
         this.auditTrailWriter = auditTrailWriter;
     }
 
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public Workpaper create(String title, String createdBy) {
         Workpaper workpaper = new Workpaper();
         workpaper.setTitle(title);
@@ -49,32 +49,38 @@ public class WorkpaperService {
         return savedWorkpaper;
     }
 
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public Workpaper startProgress(Long workpaperId, String actor) {
         return transition(workpaperId, actor, ReviewActionType.START, WorkpaperStatus.IN_PROGRESS, "Workpaper progress started");
     }
 
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public Workpaper submit(Long workpaperId, String actor) {
         return transition(workpaperId, actor, ReviewActionType.SUBMIT, WorkpaperStatus.SUBMITTED, "Workpaper submitted");
     }
 
-    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN')")
     public Workpaper requestChanges(Long workpaperId, String actor, String comment) {
         return transition(workpaperId, actor, ReviewActionType.REQUEST_CHANGES, WorkpaperStatus.CHANGES_REQUESTED, comment);
     }
 
-    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN')")
     public Workpaper approve(Long workpaperId, String actor) {
         return transition(workpaperId, actor, ReviewActionType.APPROVE, WorkpaperStatus.APPROVED, "Workpaper approved");
     }
 
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN')")
+    public Workpaper signOff(Long workpaperId, String actor) {
+        return transition(workpaperId, actor, ReviewActionType.SIGN_OFF, WorkpaperStatus.SIGNED_OFF,
+                "Workpaper signed off");
+    }
+
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public Workpaper findById(Long workpaperId) {
         return workpaperRepository.findById(workpaperId).orElseThrow();
     }
 
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN', 'ASSISTANT', 'SENIOR_AUDITOR', 'WIRTSCHAFTSPRUEFER')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public List<ReviewAction> findReviewActions(Long workpaperId) {
         Workpaper workpaper = workpaperRepository.findById(workpaperId).orElseThrow();
         return reviewActionRepository.findByWorkpaper(workpaper);
@@ -119,7 +125,8 @@ public class WorkpaperService {
             case IN_PROGRESS -> allowedTargets = EnumSet.of(WorkpaperStatus.SUBMITTED);
             case SUBMITTED -> allowedTargets = EnumSet.of(WorkpaperStatus.CHANGES_REQUESTED, WorkpaperStatus.APPROVED);
             case CHANGES_REQUESTED -> allowedTargets = EnumSet.of(WorkpaperStatus.IN_PROGRESS);
-            case APPROVED -> allowedTargets = EnumSet.noneOf(WorkpaperStatus.class);
+            case APPROVED -> allowedTargets = EnumSet.of(WorkpaperStatus.SIGNED_OFF);
+            case SIGNED_OFF -> allowedTargets = EnumSet.noneOf(WorkpaperStatus.class);
             default -> throw new IllegalStateException("Unsupported status: " + currentStatus);
         }
 

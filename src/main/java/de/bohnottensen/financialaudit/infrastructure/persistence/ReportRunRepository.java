@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface ReportRunRepository extends JpaRepository<ReportRun, Long> {
 
+    List<ReportRun> findTop5ByOrderByGeneratedAtDesc();
+
     List<ReportRun> findByStatusOrderByGeneratedAtDesc(String status);
 
     List<ReportRun> findByReportNameAndTemplateVersionOrderByGeneratedAtDesc(String reportName, String templateVersion);

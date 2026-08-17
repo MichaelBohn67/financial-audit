@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-materiality-finding-metadata
+      author: audit-plan
+      changes:
+        - addColumn:
+            tableName: findings
+            columns:
+              - column: {name: materiality_config_id, type: BIGINT}
+              - column: {name: materiality_classification, type: VARCHAR(50)}
+        - addForeignKeyConstraint:
+            baseTableName: findings
+            baseColumnNames: materiality_config_id
+            referencedTableName: materiality_configs
+            referencedColumnNames: id
+            constraintName: fk_findings_on_materiality_config

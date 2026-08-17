@@ -1,1 +1,86 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Audit dashboard</title></head><body><h1>Audit dashboard</h1><div id="metrics">Loading…</div><script>fetch('/api/dashboard').then(r=>r.json()).then(m=>{document.getElementById('metrics').innerHTML=Object.entries(m).map(([k,v])=>`<p><strong>${k}</strong>: ${v}</p>`).join('')})</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit dashboard</title>
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 1100px; padding: 0 1rem; color: #172033; }
+        .cards, .charts { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+        .card, .panel { border: 1px solid #d9deea; border-radius: .5rem; padding: 1rem; background: #fff; }
+        .card strong { display: block; font-size: 2rem; margin-top: .25rem; }
+        .panel { margin-top: 1rem; }
+        .bar { align-items: center; display: grid; gap: .5rem; grid-template-columns: 125px 1fr 45px; margin: .5rem 0; }
+        .track { background: #edf0f6; border-radius: 99px; height: .8rem; overflow: hidden; }
+        .fill { background: #356ae6; height: 100%; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border-bottom: 1px solid #edf0f6; padding: .6rem; text-align: left; }
+        .muted { color: #667085; }
+        #error { color: #b42318; }
+    </style>
+</head>
+<body>
+<h1>Audit dashboard</h1>
+<p class="muted">Current audit coverage and activity.</p>
+<p id="error" role="alert"></p>
+<section class="cards" aria-label="Summary metrics">
+    <div class="card">Total bookings<strong id="totalBookings">—</strong></div>
+    <div class="card">Total findings<strong id="totalFindings">—</strong></div>
+    <div class="card">Open remediation<strong id="openRemediation">—</strong></div>
+    <div class="card">Overdue remediation<strong id="overdueRemediation">—</strong></div>
+    <div class="card">Sampling runs<strong id="samplingRuns">—</strong></div>
+    <div class="card">Audit progress<strong id="auditProgress">—</strong></div>
+</section>
+<section class="charts">
+    <div class="panel"><h2>Findings by risk</h2><div id="riskChart"></div></div>
+    <div class="panel"><h2>Findings by status</h2><div id="statusChart"></div></div>
+    <div class="panel"><h2>Remediation status</h2><div id="remediationChart"></div></div>
+    <div class="panel"><h2>Workpaper progress</h2><div id="workpaperChart"></div></div>
+</section>
+<section class="panel"><h2>Latest reports</h2><div id="reports">Loading…</div></section>
+<section class="panel"><h2>Recent audit events</h2><div id="events">Loading…</div></section>
+<script>
+    const number = value => Number(value || 0).toLocaleString();
+    const text = (element, value) => { element.textContent = value ?? '—'; };
+    function chart(targetId, values) {
+        const target = document.getElementById(targetId);
+        target.replaceChildren();
+        const maximum = Math.max(1, ...Object.values(values));
+        Object.entries(values).forEach(([label, value]) => {
+            const row = document.createElement('div'); row.className = 'bar';
+            const name = document.createElement('span'); name.textContent = label;
+            const track = document.createElement('div'); track.className = 'track';
+            const fill = document.createElement('div'); fill.className = 'fill';
+            fill.style.width = `${Math.round(value / maximum * 100)}%`;
+            track.append(fill);
+            const count = document.createElement('span'); count.textContent = number(value);
+            row.append(name, track, count); target.append(row);
+        });
+    }
+    function table(targetId, headers, rows, empty) {
+        const target = document.getElementById(targetId); target.replaceChildren();
+        if (!rows.length) { target.textContent = empty; return; }
+        const table = document.createElement('table');
+        const head = document.createElement('tr'); headers.forEach(header => { const cell = document.createElement('th'); cell.textContent = header; head.append(cell); });
+        const thead = document.createElement('thead'); thead.append(head); table.append(thead);
+        const body = document.createElement('tbody'); rows.forEach(row => { const tr = document.createElement('tr'); row.forEach(value => { const td = document.createElement('td'); td.textContent = value ?? '—'; tr.append(td); }); body.append(tr); });
+        table.append(body); target.append(table);
+    }
+    fetch('/api/dashboard', {headers: {'Accept': 'application/json'}})
+        .then(response => { if (!response.ok) throw new Error(`Dashboard unavailable (${response.status})`); return response.json(); })
+        .then(metrics => {
+            text(document.getElementById('totalBookings'), number(metrics.totalBookings));
+            text(document.getElementById('totalFindings'), number(metrics.totalFindings));
+            text(document.getElementById('openRemediation'), number(metrics.openRemediation));
+            text(document.getElementById('overdueRemediation'), number(metrics.overdueRemediation));
+            text(document.getElementById('samplingRuns'), number(metrics.samplingRuns));
+            text(document.getElementById('auditProgress'), `${metrics.auditProgress.completionPercentage}%`);
+            chart('riskChart', metrics.findingsByRisk); chart('statusChart', metrics.findingsByStatus);
+            chart('remediationChart', metrics.remediationByStatus); chart('workpaperChart', metrics.workpapersByStatus);
+            table('reports', ['Name', 'Status', 'Generated'], metrics.latestReports.map(r => [r.name, r.status, r.generatedAt]), 'No reports available.');
+            table('events', ['Entity', 'Event', 'Actor', 'Occurred'], metrics.recentAuditEvents.map(e => [`${e.entityType} #${e.entityId}`, e.eventType, e.actor, e.occurredAt]), 'No audit events available.');
+        })
+        .catch(error => { document.getElementById('error').textContent = error.message; document.querySelectorAll('#reports, #events').forEach(e => e.textContent = 'Unable to load dashboard data.'); });
+</script>
+</body>
+</html>

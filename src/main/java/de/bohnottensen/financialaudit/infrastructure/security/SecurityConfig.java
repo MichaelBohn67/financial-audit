@@ -19,6 +19,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/bookings/**").authenticated()
+                        .requestMatchers("/dashboard").authenticated()
                         .requestMatchers("/api/**", "/open-banking/**").authenticated()
                         .anyRequest().permitAll()
                 )

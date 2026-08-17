@@ -12,7 +12,7 @@ A production-ready financial audit application should cover:
 
 ## 2. Current Implementation Status
 
-Last validated: 2026-08-17. `mvn test` passes with 105 tests, but passing tests do not establish completion of the full plan.
+Last validated: 2026-08-17. `mvn test` passes with 110 tests, but passing tests do not establish completion of the full plan.
 
 | Feature | Status | Details |
 | :--- | :--- | :--- |
@@ -26,14 +26,14 @@ Last validated: 2026-08-17. `mvn test` passes with 105 tests, but passing tests 
 | Reporting | Completed | `ReportService`, `ReportExportService`, and Thymeleaf report views exist. |
 | Materiality | Partial | Configuration, active-config retrieval, validation, classification, idempotent finding persistence, and audit events exist. API documentation and broader scope behavior remain to be completed. |
 | Finding remediation | Completed | Workpaper linking, required remediation fields, validated lifecycle transitions, API operations, persistence, and explicit audit snapshots/events are implemented and tested. |
-| Dashboard | Partial | Authenticated metrics API and a basic Thymeleaf page exist, but the planned metric set and visualizations are incomplete. |
+| Dashboard | Completed | Authenticated typed metrics API and protected Thymeleaf dashboard provide totals, grouped finding/remediation/workpaper metrics, audit progress, recent reports/events, visualizations, and tests. |
 | Audit trail | Partial | Hibernate post-insert/update/delete interception now covers the planned entities with sanitized snapshots and actor fallback. Explicit domain-event deduplication/review remains. |
 
 ## 3. Implemented Infrastructure
 
 - Liquibase migration `019-audit-plan-remediation-materiality` adds materiality activation/de minimis fields and finding remediation/workpaper-link fields.
 - Spring Security provides `AUDITOR`, `LEAD_AUDITOR`, and `ADMIN` users, although service-level workpaper authorization still accepts additional legacy roles.
-- Existing integration tests cover importing, analytics, sampling persistence, workpaper workflow, explicit audit-event writing, and automatic persistence audit events.
+- Existing integration tests cover importing, analytics, sampling persistence, workpaper workflow, explicit audit-event writing, automatic persistence audit events, and dashboard security/metrics behavior.
 
 ## 4. Remaining Work
 
@@ -56,10 +56,7 @@ The remediation service validates owners, due dates, plans, resolution comments,
 
 ### E. Dashboard
 
-1. Add total bookings/findings, findings by risk and status, open/overdue remediation, workpapers by status, sampling-run count, latest reports, audit progress, and recent audit events.
-2. Add repository queries/service aggregation and a typed dashboard DTO.
-3. Add risk, workpaper-progress, remediation-status, and recent-event visualizations.
-4. Protect the dashboard page consistently with its API and add controller/service/UI smoke tests.
+Dashboard metrics, repository queries, typed DTOs, visualizations, page/API role protection, and service/controller/UI smoke tests are implemented.
 
 ### F. Sampling hardening
 
@@ -69,14 +66,14 @@ The remediation service validates owners, due dates, plans, resolution comments,
 
 ## 5. Verification Notes
 
-- `mvn test`: 105 tests passed, 0 failures, 0 errors.
+- `mvn test`: 110 tests passed, 0 failures, 0 errors.
 - Liquibase migrations apply successfully to the H2 test database from an empty schema.
 - Materiality classification, persisted findings, idempotency, migration behavior, and audit events are now covered by dedicated unit/integration tests.
-- No dedicated tests currently cover dashboard metrics/UI.
+- Dashboard metrics, page rendering, visualizations, and API/page authorization are covered by dedicated tests.
 - Generic automatic persistence coverage is implemented; explicit domain events remain alongside generic events until deduplication is reviewed.
 
 ## 6. Suggested Implementation Order
 
 1. [x] Implement automatic audit interception and snapshot/actor tests.
-2. Complete dashboard metrics, visualizations, protection, and tests.
+2. [x] Complete dashboard metrics, visualizations, protection, and tests.
 3. Harden and expose MUS, then run final verification and update this plan.

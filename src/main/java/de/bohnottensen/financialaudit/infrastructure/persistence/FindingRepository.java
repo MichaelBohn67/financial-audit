@@ -14,6 +14,9 @@ public interface FindingRepository extends JpaRepository<Finding, Long> {
             Long bookingId, Long materialityConfigId, String ruleName);
     List<Finding> findByRemediationStatus(String status);
     List<Finding> findByRemediationOwner(String owner);
-    List<Finding> findByRemediationDueDateBeforeAndRemediationStatusNot(LocalDate date, String status);
+    long countByRemediationDueDateBeforeAndRemediationStatusNot(LocalDate date, String status);
     long countByRemediationStatusIn(List<String> statuses);
+    long countByRiskLevel(String riskLevel);
+    long countByStatus(String status);
+    long countByRemediationStatus(String status);
 }

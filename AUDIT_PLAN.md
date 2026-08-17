@@ -12,7 +12,7 @@ A production-ready financial audit application should cover:
 
 ## 2. Current Implementation Status
 
-Last validated: 2026-08-17. `mvn test` passes with 96 tests, but passing tests do not establish completion of the full plan.
+Last validated: 2026-08-17. `mvn test` passes with 105 tests, but passing tests do not establish completion of the full plan.
 
 | Feature | Status | Details |
 | :--- | :--- | :--- |
@@ -25,15 +25,15 @@ Last validated: 2026-08-17. `mvn test` passes with 96 tests, but passing tests d
 | Workpapers | Completed | Canonical `AUDITOR`/`LEAD_AUDITOR`/`ADMIN` authorization, approval, distinct sign-off, legal transitions, audit events, and review actions are implemented. |
 | Reporting | Completed | `ReportService`, `ReportExportService`, and Thymeleaf report views exist. |
 | Materiality | Partial | Configuration, active-config retrieval, validation, classification, idempotent finding persistence, and audit events exist. API documentation and broader scope behavior remain to be completed. |
-| Finding remediation | Partial | Workpaper linking, remediation fields, lifecycle service, API, and explicit audit writes exist. Validation and controller/integration coverage are incomplete. |
+| Finding remediation | Completed | Workpaper linking, required remediation fields, validated lifecycle transitions, API operations, persistence, and explicit audit snapshots/events are implemented and tested. |
 | Dashboard | Partial | Authenticated metrics API and a basic Thymeleaf page exist, but the planned metric set and visualizations are incomplete. |
-| Audit trail | Partial | `AuditTrailWriter` and `AuditEvent` exist, with explicit business-operation events. Generic automatic JPA coverage is not implemented. |
+| Audit trail | Partial | Hibernate post-insert/update/delete interception now covers the planned entities with sanitized snapshots and actor fallback. Explicit domain-event deduplication/review remains. |
 
 ## 3. Implemented Infrastructure
 
 - Liquibase migration `019-audit-plan-remediation-materiality` adds materiality activation/de minimis fields and finding remediation/workpaper-link fields.
 - Spring Security provides `AUDITOR`, `LEAD_AUDITOR`, and `ADMIN` users, although service-level workpaper authorization still accepts additional legacy roles.
-- Existing integration tests cover importing, analytics, sampling persistence, workpaper workflow, and explicit audit-event writing.
+- Existing integration tests cover importing, analytics, sampling persistence, workpaper workflow, explicit audit-event writing, and automatic persistence audit events.
 
 ## 4. Remaining Work
 
@@ -42,26 +42,17 @@ Last validated: 2026-08-17. `mvn test` passes with 96 tests, but passing tests d
 1. Document the materiality API, threshold semantics, and the relation between materiality findings and configurations.
 2. Review whether project-level (rather than account-only) evaluation is required and add that scope if needed.
 
-### B. Automatic audit trail coverage
+### B. Automatic audit trail coverage — implemented
 
-1. Choose Spring AOP or JPA entity listeners for generic persistence interception.
-2. Cover `Booking`, `Finding`, `Workpaper`, `ReviewAction`, `SamplingRun`, `ReportRun`, `MaterialityConfig`, and `ImportJob`.
-3. Record create, update, delete, and workflow-transition events where applicable.
-4. Add reusable previous/current snapshot serialization without credentials or secrets.
-5. Capture the authenticated actor and use a safe system actor fallback.
-6. Prevent recursive auditing of `AuditEvent`.
-7. Add tests for event coverage, actor propagation, and snapshots; retain explicit domain events where they add meaning.
+Hibernate post-insert, post-update, and post-delete listeners cover `Booking`, `Finding`, `Workpaper`, `ReviewAction`, `SamplingRun`, `ReportRun`, `MaterialityConfig`, and `ImportJob`. They write sanitized previous/current snapshots, propagate the authenticated actor, use `SYSTEM` for background work, and exclude `AuditEvent` itself. Integration tests cover create/update/delete events, actor propagation, and snapshot values. Existing explicit domain events remain where they provide business meaning; duplicate-event review is still a follow-up.
 
 ### C. Review workflow and roles — completed
 
 Canonical roles are enforced in the workpaper service and API. Approval transitions to `APPROVED`; a separate `SIGN_OFF` action transitions to `SIGNED_OFF`. Allowed/denied authorization, transition, controller, persistence, and audit-event behavior are covered by tests.
 
-### D. Finding remediation
+### D. Finding remediation — completed
 
-1. Complete validation for assignment, plan updates, and all remediation transitions.
-2. Ensure the lifecycle supports `OPEN`, `IN_PROGRESS`, `READY_FOR_REVIEW`, `RESOLVED`, `REJECTED`, and `CLOSED` consistently.
-3. Validate required fields and resolution metadata at each transition.
-4. Add unit, persistence, audit-trail, and controller tests.
+The remediation service validates owners, due dates, plans, resolution comments, terminal states, legal transitions, and actor identity. The API exposes assignment, plan update, transition, and workpaper-link operations. Unit, persistence, audit-trail, and controller tests cover the lifecycle.
 
 ### E. Dashboard
 
@@ -78,15 +69,14 @@ Canonical roles are enforced in the workpaper service and API. Approval transiti
 
 ## 5. Verification Notes
 
-- `mvn test`: 96 tests passed, 0 failures, 0 errors.
+- `mvn test`: 105 tests passed, 0 failures, 0 errors.
 - Liquibase migrations apply successfully to the H2 test database from an empty schema.
 - Materiality classification, persisted findings, idempotency, migration behavior, and audit events are now covered by dedicated unit/integration tests.
-- No dedicated tests currently cover finding remediation, dashboard metrics/UI, or generic automatic audit interception.
-- The current audit trail is explicit and operation-specific; it does not guarantee an event for every persistence change.
+- No dedicated tests currently cover dashboard metrics/UI.
+- Generic automatic persistence coverage is implemented; explicit domain events remain alongside generic events until deduplication is reviewed.
 
 ## 6. Suggested Implementation Order
 
-1. Harden finding remediation validation and tests.
-2. Implement automatic audit interception and snapshot/actor tests.
-3. Complete dashboard metrics, visualizations, protection, and tests.
-4. Harden and expose MUS, then run final verification and update this plan.
+1. [x] Implement automatic audit interception and snapshot/actor tests.
+2. Complete dashboard metrics, visualizations, protection, and tests.
+3. Harden and expose MUS, then run final verification and update this plan.

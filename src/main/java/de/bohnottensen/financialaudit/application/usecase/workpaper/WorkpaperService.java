@@ -142,7 +142,7 @@ public class WorkpaperService {
         ReviewAction reviewAction = new ReviewAction();
         reviewAction.setWorkpaper(workpaper);
         reviewAction.setActor(actor);
-        reviewAction.setAction(action.name());
+        reviewAction.setAction(ReviewActionType.valueOf(action.name()));
         reviewAction.setComment(comment);
         reviewActionRepository.save(reviewAction);
     }

@@ -120,6 +120,6 @@ public class WorkpaperReviewApiController {
                                 String assignedTo, Long projectId,
                                 LocalDateTime createdAt, LocalDateTime updatedAt) {}
 
-    public record ReviewActionView(Long id, String actor, String action, String comment,
+    public record ReviewActionView(Long id, String actor, de.bohnottensen.financialaudit.domain.model.ReviewActionType action, String comment,
                                    LocalDateTime createdAt) {}
 }

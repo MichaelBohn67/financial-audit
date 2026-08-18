@@ -1,6 +1,7 @@
 package de.bohnottensen.financialaudit.integration;
 
 import de.bohnottensen.financialaudit.application.usecase.workpaper.WorkpaperService;
+import de.bohnottensen.financialaudit.domain.model.ReviewActionType;
 import de.bohnottensen.financialaudit.domain.model.Workpaper;
 import de.bohnottensen.financialaudit.domain.model.WorkpaperStatus;
 import de.bohnottensen.financialaudit.infrastructure.persistence.AuditEventRepository;
@@ -85,7 +86,9 @@ class WorkpaperWorkflowIntegrationTest {
                 workpaperRepository.findById(id).orElseThrow());
         assertThat(actions).hasSize(8);
         assertThat(actions.stream().map(a -> a.getAction()).toList())
-                .containsExactly("CREATE", "START", "SUBMIT", "REQUEST_CHANGES", "START", "SUBMIT", "APPROVE", "SIGN_OFF");
+                .containsExactly(ReviewActionType.CREATE, ReviewActionType.START, ReviewActionType.SUBMIT,
+                        ReviewActionType.REQUEST_CHANGES, ReviewActionType.START, ReviewActionType.SUBMIT,
+                        ReviewActionType.APPROVE, ReviewActionType.SIGN_OFF);
 
         // AuditTrail events must be written for each step.
         assertThat(auditEventRepository.count()).isGreaterThan(auditEventsBefore + 7);

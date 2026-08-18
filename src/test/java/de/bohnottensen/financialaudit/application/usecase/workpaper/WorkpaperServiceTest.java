@@ -2,6 +2,7 @@ package de.bohnottensen.financialaudit.application.usecase.workpaper;
 
 import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
 import de.bohnottensen.financialaudit.domain.model.ReviewAction;
+import de.bohnottensen.financialaudit.domain.model.ReviewActionType;
 import de.bohnottensen.financialaudit.domain.model.Workpaper;
 import de.bohnottensen.financialaudit.infrastructure.persistence.ReviewActionRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.WorkpaperRepository;
@@ -54,7 +55,8 @@ class WorkpaperServiceTest {
 
         assertThat(workpaper.getStatus()).isEqualTo("SIGNED_OFF");
         assertThat(actions.stream().map(ReviewAction::getAction).toList())
-                .containsExactly("START", "SUBMIT", "REQUEST_CHANGES", "START", "SUBMIT", "APPROVE", "SIGN_OFF");
+                .containsExactly(ReviewActionType.START, ReviewActionType.SUBMIT, ReviewActionType.REQUEST_CHANGES,
+                        ReviewActionType.START, ReviewActionType.SUBMIT, ReviewActionType.APPROVE, ReviewActionType.SIGN_OFF);
     }
 
     @Test

@@ -3,6 +3,7 @@ package de.bohnottensen.financialaudit.infrastructure.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.bohnottensen.financialaudit.application.usecase.workpaper.WorkpaperService;
 import de.bohnottensen.financialaudit.domain.model.ReviewAction;
+import de.bohnottensen.financialaudit.domain.model.ReviewActionType;
 import de.bohnottensen.financialaudit.domain.model.Workpaper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,8 +39,6 @@ class WorkpaperReviewApiControllerTest {
     @MockBean
     private WorkpaperService workpaperService;
 
-    // --- create ---
-
     @Test
     @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldCreateWorkpaper() throws Exception {
@@ -54,33 +53,25 @@ class WorkpaperReviewApiControllerTest {
                 .andExpect(jsonPath("$.status").value("DRAFT"));
     }
 
-    // --- startProgress ---
-
     @Test
     @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldStartProgress() throws Exception {
         when(workpaperService.startProgress(anyLong(), anyString())).thenReturn(workpaper(1L, "WP-1", "IN_PROGRESS", "assistant"));
 
-        mockMvc.perform(post("/api/workpapers/1/start")
-                        .with(csrf()))
+        mockMvc.perform(post("/api/workpapers/1/start").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
     }
-
-    // --- submit ---
 
     @Test
     @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldSubmitWorkpaper() throws Exception {
         when(workpaperService.submit(anyLong(), anyString())).thenReturn(workpaper(1L, "WP-1", "SUBMITTED", "assistant"));
 
-        mockMvc.perform(post("/api/workpapers/1/submit")
-                        .with(csrf()))
+        mockMvc.perform(post("/api/workpapers/1/submit").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SUBMITTED"));
     }
-
-    // --- requestChanges (SENIOR_AUDITOR) ---
 
     @Test
     @WithMockUser(username = "senior", roles = "LEAD_AUDITOR")
@@ -106,16 +97,13 @@ class WorkpaperReviewApiControllerTest {
                 .andExpect(status().isForbidden());
     }
 
-    // --- approve (WIRTSCHAFTSPRUEFER only) ---
-
     @Test
     @WithMockUser(username = "wirtschaftspruefer", roles = "LEAD_AUDITOR")
-    void wirtschaftspruefer_shouldApproveWorkpaper() throws Exception {
+    void wirtschaftsprueferShouldApproveWorkpaper() throws Exception {
         when(workpaperService.approve(anyLong(), anyString()))
                 .thenReturn(workpaper(1L, "WP-1", "APPROVED", "wirtschaftspruefer"));
 
-        mockMvc.perform(post("/api/workpapers/1/approve")
-                        .with(csrf()))
+        mockMvc.perform(post("/api/workpapers/1/approve").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
     }
@@ -123,8 +111,7 @@ class WorkpaperReviewApiControllerTest {
     @Test
     @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldNotBeAllowedToApprove() throws Exception {
-        mockMvc.perform(post("/api/workpapers/1/approve")
-                        .with(csrf()))
+        mockMvc.perform(post("/api/workpapers/1/approve").with(csrf()))
                 .andExpect(status().isForbidden());
     }
 
@@ -134,8 +121,7 @@ class WorkpaperReviewApiControllerTest {
         when(workpaperService.signOff(anyLong(), anyString()))
                 .thenReturn(workpaper(1L, "WP-1", "SIGNED_OFF", "lead"));
 
-        mockMvc.perform(post("/api/workpapers/1/sign-off")
-                        .with(csrf()))
+        mockMvc.perform(post("/api/workpapers/1/sign-off").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SIGNED_OFF"));
     }
@@ -143,12 +129,9 @@ class WorkpaperReviewApiControllerTest {
     @Test
     @WithMockUser(username = "senior", roles = "AUDITOR")
     void seniorAuditorShouldNotBeAllowedToApprove() throws Exception {
-        mockMvc.perform(post("/api/workpapers/1/approve")
-                        .with(csrf()))
+        mockMvc.perform(post("/api/workpapers/1/approve").with(csrf()))
                 .andExpect(status().isForbidden());
     }
-
-    // --- get & review actions (any authenticated role) ---
 
     @Test
     @WithMockUser(username = "assistant", roles = "AUDITOR")
@@ -164,7 +147,7 @@ class WorkpaperReviewApiControllerTest {
     @Test
     @WithMockUser(username = "assistant", roles = "AUDITOR")
     void shouldReturnReviewActionHistory() throws Exception {
-        when(workpaperService.findReviewActions(1L)).thenReturn(List.of(reviewAction("assistant", "START")));
+        when(workpaperService.findReviewActions(1L)).thenReturn(List.of(reviewAction("assistant", ReviewActionType.START)));
 
         mockMvc.perform(get("/api/workpapers/1/actions"))
                 .andExpect(status().isOk())
@@ -187,11 +170,10 @@ class WorkpaperReviewApiControllerTest {
         return wp;
     }
 
-    private ReviewAction reviewAction(String actor, String action) {
+    private ReviewAction reviewAction(String actor, ReviewActionType action) {
         ReviewAction ra = new ReviewAction();
         ra.setActor(actor);
         ra.setAction(action);
         return ra;
     }
 }
-

@@ -1,15 +1,6 @@
 package de.bohnottensen.financialaudit.domain.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
@@ -28,8 +19,9 @@ public class ReviewAction {
     @Column(nullable = false, length = 255)
     private String actor;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 100)
-    private String action;
+    private ReviewActionType action;
 
     @Column(length = 1024)
     private String comment;
@@ -68,11 +60,11 @@ public class ReviewAction {
         this.actor = actor;
     }
 
-    public String getAction() {
+    public ReviewActionType getAction() {
         return action;
     }
 
-    public void setAction(String action) {
+    public void setAction(ReviewActionType action) {
         this.action = action;
     }
 

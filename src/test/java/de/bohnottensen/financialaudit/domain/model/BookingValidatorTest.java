@@ -71,6 +71,22 @@ class BookingValidatorTest {
     }
 
     @Test
+    void shouldNotCompareAccountsWhenSourceAccountIsMissing() {
+        Booking booking = new Booking();
+        booking.setDescription("Invalid");
+        booking.setAmount(BigDecimal.ONE);
+        booking.setCurrency("EUR");
+        booking.setTransactionTimestamp(java.time.LocalDateTime.now());
+        booking.setDestinationAccount("DE1");
+
+        BookingValidator validator = new BookingValidator();
+        List<String> errors = validator.validate(booking);
+
+        assertThat(errors)
+                .containsExactly("Source Account is required");
+    }
+
+    @Test
     void shouldReportErrorWhenRequiredFieldsMissing() {
         Booking booking = new Booking();
 

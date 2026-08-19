@@ -45,7 +45,15 @@ class DashboardServiceTest {
         when(workpapers.countByStatus("SIGNED_OFF")).thenReturn(2L);
         when(samplingRuns.count()).thenReturn(3L);
         when(reportRuns.findTop5ByOrderByGeneratedAtDesc()).thenReturn(List.of(report()));
-        when(auditEvents.findTop10ByOrderByMetadata_OccurredAtDesc()).thenReturn(List.of());
+
+        AuditEvent auditEvent = new AuditEvent();
+        auditEvent.setId(100L);
+        auditEvent.setEntityType("BOOKING");
+        auditEvent.setEntityId(1L);
+        auditEvent.setEventType("BOOKING_CREATED");
+        auditEvent.setActor("admin");
+        auditEvent.getMetadata().initializeOccurredAtIfMissing();
+        when(auditEvents.findTop10ByOrderByMetadata_OccurredAtDesc()).thenReturn(List.of(auditEvent));
 
         DashboardService.Metrics metrics = service.metrics();
 
@@ -55,6 +63,19 @@ class DashboardServiceTest {
         assertThat(metrics.overdueRemediation()).isEqualTo(1);
         assertThat(metrics.auditProgress().completionPercentage()).isEqualByComparingTo("50.0");
         assertThat(metrics.latestReports()).hasSize(1);
+        assertThat(metrics.recentAuditEvents()).hasSize(1);
+        assertThat(metrics.recentAuditEvents().get(0).entityType()).isEqualTo("BOOKING");
+    }
+
+    @Test
+    void handlesZeroWorkpapersProgressGracefully() {
+        when(workpapers.count()).thenReturn(0L);
+        when(workpapers.countByStatus("SIGNED_OFF")).thenReturn(0L);
+
+        DashboardService.Metrics metrics = service.metrics();
+
+        assertThat(metrics.auditProgress().totalWorkpapers()).isEqualTo(0);
+        assertThat(metrics.auditProgress().completionPercentage()).isEqualByComparingTo(java.math.BigDecimal.ZERO);
     }
 
     private ReportRun report() {

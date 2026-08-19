@@ -59,6 +59,29 @@ class FindingRemediationApiControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
+    void auditorCanLinkWorkpaper() throws Exception {
+        when(service.linkWorkpaper(anyLong(), anyLong(), anyString())).thenReturn(new Finding());
+
+        mockMvc.perform(post("/api/findings/1/workpaper/5")
+                        .with(csrf()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
+    void auditorCanTransitionRemediationStatus() throws Exception {
+        when(service.transition(anyLong(), anyString(), anyString(), anyString())).thenReturn(new Finding());
+
+        mockMvc.perform(patch("/api/findings/1/remediation")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "status", "RESOLVED", "comment", "Issue fixed"))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     @WithMockUser(username = "viewer", roles = "USER")
     void nonAuditRoleCannotUpdateRemediation() throws Exception {
         mockMvc.perform(patch("/api/findings/1/remediation/plan")

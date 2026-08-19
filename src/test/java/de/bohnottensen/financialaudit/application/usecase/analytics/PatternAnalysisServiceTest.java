@@ -74,6 +74,67 @@ class PatternAnalysisServiceTest {
         verify(auditTrailWriter, times(result.issueCount())).record(any(), any(), any(), any(), any(), any(), any());
     }
 
+    @Test
+    void shouldHandleEmptyAndNormalConsecutiveBookingsWithoutIssues() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        FindingRepository findingRepository = mock(FindingRepository.class);
+        PatternAnalysisRunRepository runRepository = mock(PatternAnalysisRunRepository.class);
+        PatternAnalysisIssueRepository issueRepository = mock(PatternAnalysisIssueRepository.class);
+        AuditTrailWriter auditTrailWriter = mock(AuditTrailWriter.class);
+
+        Booking b1 = booking(1L, 100L, "A", "10.00", "2026-08-01T10:00:00", "DE111", "DE222");
+        Booking b2 = booking(2L, 101L, "B", "11.00", "2026-08-05T10:00:00", "DE111", "DE222");
+        Booking b3WithNulls = new Booking();
+        b3WithNulls.setId(3L);
+
+        when(bookingRepository.findAll()).thenReturn(List.of(b1, b2, b3WithNulls));
+        when(runRepository.save(any(PatternAnalysisRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PatternAnalysisService service = new PatternAnalysisService(
+                bookingRepository,
+                findingRepository,
+                runRepository,
+                issueRepository,
+                auditTrailWriter
+        );
+
+        PatternAnalysisResult result = service.run("v1", "clean-test");
+
+        assertThat(result.issueCount()).isEqualTo(0);
+        assertThat(result.issues()).isEmpty();
+        verify(issueRepository, times(0)).save(any());
+        verify(findingRepository, times(0)).save(any());
+    }
+
+    @Test
+    void shouldIgnoreRepeatedTransfersSpanGreaterThan24Hours() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        FindingRepository findingRepository = mock(FindingRepository.class);
+        PatternAnalysisRunRepository runRepository = mock(PatternAnalysisRunRepository.class);
+        PatternAnalysisIssueRepository issueRepository = mock(PatternAnalysisIssueRepository.class);
+        AuditTrailWriter auditTrailWriter = mock(AuditTrailWriter.class);
+
+        Booking b1 = booking(1L, 100L, "P1", "50.00", "2026-08-01T10:00:00", "DE111", "DE222");
+        Booking b2 = booking(2L, 101L, "P2", "50.00", "2026-08-02T15:00:00", "DE111", "DE222");
+        Booking b3 = booking(3L, 102L, "P3", "50.00", "2026-08-03T20:00:00", "DE111", "DE222");
+
+        when(bookingRepository.findAll()).thenReturn(List.of(b1, b2, b3));
+        when(runRepository.save(any(PatternAnalysisRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PatternAnalysisService service = new PatternAnalysisService(
+                bookingRepository,
+                findingRepository,
+                runRepository,
+                issueRepository,
+                auditTrailWriter
+        );
+
+        PatternAnalysisResult result = service.run("v1", "span-test");
+
+        assertThat(result.issueCount()).isEqualTo(0);
+        verify(findingRepository, times(0)).save(any());
+    }
+
     private Booking booking(Long id,
                             Long foreignTransactionId,
                             String description,

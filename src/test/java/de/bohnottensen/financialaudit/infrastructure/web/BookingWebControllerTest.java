@@ -100,6 +100,52 @@ class BookingWebControllerTest {
     }
 
     @Test
+    void shouldSaveNewBookingWithoutTimestamp() throws Exception {
+        Booking savedBooking = new Booking();
+        savedBooking.setId(2L);
+        savedBooking.setDescription("Auto Timestamp Booking");
+        savedBooking.setAmount(new BigDecimal("150.00"));
+        savedBooking.setCurrency("EUR");
+        when(bookingRepository.save(any(Booking.class))).thenReturn(savedBooking);
+
+        mockMvc.perform(post("/bookings")
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1")
+                        .param("documentId", "DOC-1")
+                        .param("description", "Auto Timestamp Booking")
+                        .param("amount", "150.00")
+                        .param("currency", "EUR"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/bookings"));
+    }
+
+    @Test
+    void shouldUpdateExistingBooking() throws Exception {
+        Booking existing = new Booking();
+        existing.setId(1L);
+        existing.setDescription("Old Description");
+        existing.setAmount(new BigDecimal("100.00"));
+
+        Booking updated = new Booking();
+        updated.setId(1L);
+        updated.setDescription("Updated Description");
+        updated.setAmount(new BigDecimal("200.00"));
+
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(bookingRepository.save(any(Booking.class))).thenReturn(updated);
+
+        mockMvc.perform(post("/bookings/1")
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1")
+                        .param("documentId", "DOC-1")
+                        .param("description", "Updated Description")
+                        .param("amount", "200.00")
+                        .param("currency", "EUR"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/bookings"));
+    }
+
+    @Test
     void shouldShowEditForm() throws Exception {
         Booking booking = new Booking();
         booking.setId(1L);

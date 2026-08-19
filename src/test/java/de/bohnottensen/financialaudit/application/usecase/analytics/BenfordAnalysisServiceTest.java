@@ -68,7 +68,47 @@ class BenfordAnalysisServiceTest {
 
         assertThat(result.bookingCount()).isEqualTo(10);
         assertThat(result.digitResults()).hasSize(9);
+        assertThat(result.suspiciousDigitCount()).isGreaterThan(0);
         verify(statRepository, times(9)).save(any(BenfordDigitStat.class));
+        verify(findingRepository, times(result.suspiciousDigitCount())).save(any(Finding.class));
+        verify(auditTrailWriter, times(result.suspiciousDigitCount())).record(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldHandleEmptyAndIneligibleBookings() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        FindingRepository findingRepository = mock(FindingRepository.class);
+        BenfordAnalysisRunRepository runRepository = mock(BenfordAnalysisRunRepository.class);
+        BenfordDigitStatRepository statRepository = mock(BenfordDigitStatRepository.class);
+        AuditTrailWriter auditTrailWriter = mock(AuditTrailWriter.class);
+
+        Booking zeroAmount = booking(1, "Zero", BigDecimal.ZERO);
+        Booking negativeAmount = booking(2, "Neg", new BigDecimal("-50.00"));
+        Booking nullAmount = booking(3, "Null", null);
+
+        when(bookingRepository.findAll()).thenReturn(List.of(zeroAmount, negativeAmount, nullAmount));
+        when(runRepository.save(any(BenfordAnalysisRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(statRepository.save(any(BenfordDigitStat.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BenfordAnalysisService service = new BenfordAnalysisService(
+                bookingRepository,
+                findingRepository,
+                runRepository,
+                statRepository,
+                auditTrailWriter
+        );
+
+        BenfordAnalysisResult result = service.run("v1", "empty-test");
+
+        assertThat(result.bookingCount()).isEqualTo(0);
+        assertThat(result.suspiciousDigitCount()).isEqualTo(0);
+        assertThat(result.digitResults()).hasSize(9);
+        for (BenfordAnalysisResult.DigitResult digit : result.digitResults()) {
+            assertThat(digit.observedRatio()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(digit.sampleSize()).isEqualTo(0);
+        }
+        verify(findingRepository, times(0)).save(any());
+        verify(auditTrailWriter, times(0)).record(any(), any(), any(), any(), any(), any(), any());
     }
 
     private Booking booking(long foreignId, String description, BigDecimal amount) {

@@ -81,7 +81,7 @@ public class CsvImportAdapter implements TransactionSourcePort {
         return null;
     }
 
-    private String normalizeHeader(String value) {
+    String normalizeHeader(String value) {
         if (value == null) {
             return "";
         }

@@ -80,9 +80,16 @@ class BookingAnalysisServiceTest {
         assertThat(findings.get(0).getRunContext()).isEqualTo("compliance-check-q3");
         assertThat(findings.get(0).getStatus()).isEqualTo("NEW");
         assertThat(findings.get(0).getRuleName()).isEqualTo("AML_RULE");
+        assertThat(findings.get(0).getBooking()).isSameAs(booking1);
+        assertThat(findings.get(0).getAlertDescription()).isEqualTo("High amount exceeded threshold");
+        assertThat(findings.get(0).getAnalysisRunId()).startsWith("ANL-");
 
         assertThat(findings.get(1).getRiskLevel()).isEqualTo("MEDIUM");
+        assertThat(findings.get(1).getBooking()).isSameAs(booking2);
+        assertThat(findings.get(1).getAlertDescription()).isEqualTo("Unusual pattern alert");
+        assertThat(findings.get(1).getAnalysisRunId()).startsWith("ANL-");
 
+        ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
         verify(auditTrailWriter, times(2)).record(
                 eq("FINDING"),
                 eq(100L),
@@ -90,8 +97,15 @@ class BookingAnalysisServiceTest {
                 eq("SYSTEM_AML"),
                 eq("Finding created by AML analysis"),
                 isNull(),
-                anyString()
+                payloadCaptor.capture()
         );
+
+        assertThat(payloadCaptor.getAllValues().get(0)).contains(
+                "bookingId=1;ruleName=AML_RULE;riskLevel=HIGH;status=NEW;analysisRunId="
+        ).contains(";ruleVersion=v2.1;runContext=compliance-check-q3");
+        assertThat(payloadCaptor.getAllValues().get(1)).contains(
+                "bookingId=2;ruleName=AML_RULE;riskLevel=MEDIUM;status=NEW;analysisRunId="
+        ).contains(";ruleVersion=v2.1;runContext=compliance-check-q3");
     }
 
     @Test

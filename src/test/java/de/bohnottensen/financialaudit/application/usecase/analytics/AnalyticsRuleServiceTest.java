@@ -6,19 +6,20 @@ import de.bohnottensen.financialaudit.domain.model.Finding;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BookingRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.FindingRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.*;
 
 class AnalyticsRuleServiceTest {
 
@@ -28,13 +29,13 @@ class AnalyticsRuleServiceTest {
         FindingRepository findingRepository = mock(FindingRepository.class);
         AuditTrailWriter auditTrailWriter = mock(AuditTrailWriter.class);
 
-        Booking highAndLate = booking("HIGH", new BigDecimal("150000.00"), "EUR",
+        Booking highAndLate = booking(10L, "HIGH", new BigDecimal("150000.00"), "EUR",
                 LocalDateTime.parse("2026-08-01T23:15:00"), "DE900", "DE901");
-        Booking p1 = booking("P1", new BigDecimal("999.00"), "EUR",
+        Booking p1 = booking(11L, "P1", new BigDecimal("999.00"), "EUR",
                 LocalDateTime.parse("2026-08-01T10:00:00"), "DE111", "DE222");
-        Booking p2 = booking("P2", new BigDecimal("999.00"), "EUR",
+        Booking p2 = booking(12L, "P2", new BigDecimal("999.00"), "EUR",
                 LocalDateTime.parse("2026-08-01T11:00:00"), "DE111", "DE222");
-        Booking p3 = booking("P3", new BigDecimal("999.00"), "EUR",
+        Booking p3 = booking(13L, "P3", new BigDecimal("999.00"), "EUR",
                 LocalDateTime.parse("2026-08-01T12:00:00"), "DE111", "DE222");
 
         when(bookingRepository.findAll()).thenReturn(List.of(highAndLate, p1, p2, p3));
@@ -65,16 +66,92 @@ class AnalyticsRuleServiceTest {
                 "TIME_WINDOW_RULE",
                 "PATTERN_REPEAT_RULE"
         );
-        verify(auditTrailWriter, times(3)).record(any(), any(), any(), any(), any(), any(), any());
+
+        for (Finding f : findings) {
+            assertThat(f.getStatus()).isEqualTo("NEW");
+            assertThat(f.getAnalysisRunId()).isEqualTo("RULE-v1");
+            assertThat(f.getRuleVersion()).isEqualTo("v1");
+            assertThat(f.getRunContext()).isEqualTo("task11");
+            assertThat(f.getBooking()).isNotNull();
+            assertThat(f.getAlertDescription()).isNotEmpty();
+        }
+
+        ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+        verify(auditTrailWriter, times(3)).record(
+                eq("FINDING"),
+                anyLong(),
+                eq("FINDING_CREATED"),
+                eq("SYSTEM_ANALYTICS"),
+                anyString(),
+                isNull(),
+                payloadCaptor.capture()
+        );
+
+        List<String> payloads = payloadCaptor.getAllValues();
+        assertThat(payloads).allMatch(p -> p.contains("bookingId=")
+                && p.contains(";ruleName=")
+                && p.contains(";riskLevel=")
+                && p.contains(";status=NEW")
+                && p.contains(";analysisRunId=RULE-v1")
+                && p.contains(";ruleVersion=v1")
+                && p.contains(";runContext=task11"));
     }
 
-    private Booking booking(String description,
+    @Test
+    void shouldHandleRuleMatchesWithNullBooking() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        FindingRepository findingRepository = mock(FindingRepository.class);
+        AuditTrailWriter auditTrailWriter = mock(AuditTrailWriter.class);
+
+        AnalyticsRule customRule = bookings -> List.of(
+                new AnalyticsRuleMatch(null, "CUSTOM_RULE", "Custom Alert", "LOW")
+        );
+
+        when(bookingRepository.findAll()).thenReturn(Collections.emptyList());
+        when(findingRepository.save(any(Finding.class))).thenAnswer(invocation -> {
+            Finding f = invocation.getArgument(0);
+            f.setId(99L);
+            return f;
+        });
+
+        AnalyticsRuleService service = new AnalyticsRuleService(
+                bookingRepository,
+                findingRepository,
+                auditTrailWriter,
+                List.of(customRule)
+        );
+
+        List<Finding> findings = service.run("v2", "null-booking-ctx");
+        assertThat(findings).hasSize(1);
+        assertThat(findings.get(0).getBooking()).isNull();
+        assertThat(findings.get(0).getRiskLevel()).isEqualTo("LOW");
+        assertThat(findings.get(0).getRuleName()).isEqualTo("CUSTOM_RULE");
+
+        ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+        verify(auditTrailWriter).record(
+                eq("FINDING"),
+                eq(99L),
+                eq("FINDING_CREATED"),
+                eq("SYSTEM_ANALYTICS"),
+                eq("Finding created by analytics rule CUSTOM_RULE"),
+                isNull(),
+                payloadCaptor.capture()
+        );
+
+        assertThat(payloadCaptor.getValue()).isEqualTo(
+                "bookingId=null;ruleName=CUSTOM_RULE;riskLevel=LOW;status=NEW;analysisRunId=RULE-v2;ruleVersion=v2;runContext=null-booking-ctx"
+        );
+    }
+
+    private Booking booking(Long id,
+                            String description,
                             BigDecimal amount,
                             String currency,
                             LocalDateTime timestamp,
                             String sourceAccount,
                             String destinationAccount) {
         Booking booking = new Booking();
+        booking.setId(id);
         booking.setDescription(description);
         booking.setAmount(amount);
         booking.setCurrency(currency);

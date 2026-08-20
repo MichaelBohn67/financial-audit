@@ -136,6 +136,10 @@ public class ReportRun {
         return generatedAt;
     }
 
+    public void setGeneratedAt(LocalDateTime generatedAt) {
+        this.generatedAt = generatedAt;
+    }
+
     public LocalDateTime getCompletedAt() {
         return completedAt;
     }

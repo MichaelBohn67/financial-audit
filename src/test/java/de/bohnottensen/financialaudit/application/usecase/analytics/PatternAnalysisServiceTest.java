@@ -10,6 +10,7 @@ import de.bohnottensen.financialaudit.infrastructure.persistence.FindingReposito
 import de.bohnottensen.financialaudit.infrastructure.persistence.PatternAnalysisIssueRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.PatternAnalysisRunRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -18,10 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class PatternAnalysisServiceTest {
 
@@ -42,7 +40,7 @@ class PatternAnalysisServiceTest {
 
         when(bookingRepository.findAll()).thenReturn(List.of(duplicateA, duplicateB, gapBooking, pattern1, pattern2, pattern3));
 
-        AtomicLong runIds = new AtomicLong(1L);
+        AtomicLong runIds = new AtomicLong(77L);
         when(runRepository.save(any(PatternAnalysisRun.class))).thenAnswer(invocation -> {
             PatternAnalysisRun run = invocation.getArgument(0);
             if (run.getId() == null) {
@@ -67,11 +65,52 @@ class PatternAnalysisServiceTest {
 
         PatternAnalysisResult result = service.run("v1", "task13");
 
+        assertThat(result.bookingCount()).isEqualTo(6);
         assertThat(result.issueCount()).isGreaterThanOrEqualTo(3);
+        assertThat(result.runDbId()).isEqualTo(77L);
+        assertThat(result.ruleVersion()).isEqualTo("v1");
+        assertThat(result.runContext()).isEqualTo("task13");
+        assertThat(result.runId()).startsWith("PATTERN-");
         assertThat(result.issues().stream().map(PatternAnalysisResult.IssueResult::issueType))
                 .contains("DUPLICATE_DOCUMENT_NUMBER", "DOCUMENT_NUMBER_GAP", "REPEATED_TRANSFER_PATTERN");
-        verify(issueRepository, times(result.issueCount())).save(any(PatternAnalysisIssue.class));
-        verify(auditTrailWriter, times(result.issueCount())).record(any(), any(), any(), any(), any(), any(), any());
+
+        ArgumentCaptor<PatternAnalysisIssue> issueCaptor = ArgumentCaptor.forClass(PatternAnalysisIssue.class);
+        verify(issueRepository, times(result.issueCount())).save(issueCaptor.capture());
+        for (PatternAnalysisIssue issue : issueCaptor.getAllValues()) {
+            assertThat(issue.getPatternRunId()).isEqualTo(77L);
+            assertThat(issue.getSeverity()).isNotNull();
+            assertThat(issue.getIssueType()).isNotNull();
+            assertThat(issue.getPrimaryBookingId()).isNotNull();
+        }
+
+        ArgumentCaptor<Finding> findingCaptor = ArgumentCaptor.forClass(Finding.class);
+        verify(findingRepository, times(result.issueCount())).save(findingCaptor.capture());
+        for (Finding f : findingCaptor.getAllValues()) {
+            assertThat(f.getRiskLevel()).isNotNull();
+            assertThat(f.getStatus()).isEqualTo("NEW");
+            assertThat(f.getRuleVersion()).isEqualTo("v1");
+            assertThat(f.getRunContext()).isEqualTo("task13");
+            assertThat(f.getAnalysisRunId()).isEqualTo(result.runId());
+            assertThat(f.getRuleName()).startsWith("PATTERN_");
+        }
+
+        ArgumentCaptor<String> auditPayloadCaptor = ArgumentCaptor.forClass(String.class);
+        verify(auditTrailWriter, times(result.issueCount())).record(
+                eq("FINDING"),
+                eq(77L),
+                eq("FINDING_CREATED"),
+                eq("SYSTEM_PATTERN_ANALYSIS"),
+                eq("Finding created by pattern analysis"),
+                isNull(),
+                auditPayloadCaptor.capture()
+        );
+        for (String payload : auditPayloadCaptor.getAllValues()) {
+            assertThat(payload).contains(";riskLevel=")
+                    .contains(";status=NEW")
+                    .contains(";analysisRunId=" + result.runId())
+                    .contains(";ruleVersion=v1")
+                    .contains(";runContext=task13");
+        }
     }
 
     @Test

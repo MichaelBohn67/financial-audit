@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,7 +73,7 @@ class SamplingServiceTest {
     }
 
     @Test
-    void shouldRejectMusSampleLargerThanEffectivePopulation() {
+    void shouldRejectInvalidMusParameters() {
         BookingRepository bookingRepository = mock(BookingRepository.class);
         SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
         SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
@@ -80,9 +81,18 @@ class SamplingServiceTest {
 
         SamplingService service = new SamplingService(bookingRepository, runRepository, runItemRepository);
 
+        assertThatThrownBy(() -> service.generateMusSample("invalid-size", 2, 0, 1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("sampleSize must be > 0");
+
         assertThatThrownBy(() -> service.generateMusSample("oversized", 2, 3, 1))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("oversized samples are rejected");
+
+        when(bookingRepository.findAll()).thenReturn(Collections.emptyList());
+        assertThatThrownBy(() -> service.generateMusSample("empty", 2, 1, 1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("No positive booking amounts available for MUS sampling");
     }
 
     @Test
@@ -163,6 +173,24 @@ class SamplingServiceTest {
     }
 
     @Test
+    void shouldRejectInvalidRandomParameters() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
+        SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
+        when(bookingRepository.findAll()).thenReturn(List.of(booking(1L, "100.00"), booking(2L, "200.00")));
+
+        SamplingService service = new SamplingService(bookingRepository, runRepository, runItemRepository);
+
+        assertThatThrownBy(() -> service.generateRandomSample("test", 2, 0, 1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("sampleSize must be > 0");
+
+        assertThatThrownBy(() -> service.generateRandomSample("test", 2, 5, 1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("sampleSize must be <= effective population size");
+    }
+
+    @Test
     void shouldCreateDeterministicStratifiedSample() {
         BookingRepository bookingRepository = mock(BookingRepository.class);
         SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
@@ -216,16 +244,37 @@ class SamplingServiceTest {
                 .containsAnyOf(1, 2, 3);
     }
 
+    @Test
+    void shouldRejectInvalidStratifiedParameters() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
+        SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
+        when(bookingRepository.findAll()).thenReturn(List.of(booking(1L, "100.00"), booking(2L, "200.00")));
+
+        SamplingService service = new SamplingService(bookingRepository, runRepository, runItemRepository);
+
+        assertThatThrownBy(() -> service.generateStratifiedSample("test", 2, 0, 1L, 2))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("sampleSize must be > 0");
+
+        assertThatThrownBy(() -> service.generateStratifiedSample("test", 2, 2, 1L, 0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("stratumCount must be > 0");
+
+        assertThatThrownBy(() -> service.generateStratifiedSample("test", 2, 5, 1L, 2))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("sampleSize must be <= effective population size");
+    }
+
     private Booking booking(Long id, String amount) {
         Booking booking = new Booking();
         booking.setId(id);
-        booking.setForeignTransactionId(id + 1000);
-        booking.setDescription("B-" + id);
+        booking.setDescription("Sampling test booking");
         booking.setAmount(new BigDecimal(amount));
         booking.setCurrency("EUR");
-        booking.setTransactionTimestamp(LocalDateTime.parse("2026-08-01T10:00:00"));
-        booking.setSourceAccount("DE111");
-        booking.setDestinationAccount("DE222");
+        booking.setTransactionTimestamp(LocalDateTime.of(2026, 8, 17, 10, 0));
+        booking.setSourceAccount("SRC");
+        booking.setDestinationAccount("DST");
         return booking;
     }
 }

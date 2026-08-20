@@ -39,23 +39,86 @@ class MaterialityServiceTest {
     }
 
     @Test
-    void shouldClassifyBookingAtEachMaterialityLevel() {
-        MaterialityConfig config = config(10L);
+    void shouldValidateThresholdBoundariesOnSave() {
+        String expectedMsg = "Materiality thresholds must satisfy 0 <= de minimis <= performance <= overall";
+
+        // Blank name
+        assertThatThrownBy(() -> service.save("  ", new BigDecimal("100"), new BigDecimal("50"), new BigDecimal("10")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(expectedMsg);
+
+        // Null thresholds
+        assertThatThrownBy(() -> service.save("T1", null, new BigDecimal("50"), new BigDecimal("10")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(expectedMsg);
+
+        // Zero or negative planning materiality
+        assertThatThrownBy(() -> service.save("T1", BigDecimal.ZERO, new BigDecimal("100"), new BigDecimal("50")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(expectedMsg);
+
+        assertThatThrownBy(() -> service.save("T1", new BigDecimal("-100"), new BigDecimal("50"), new BigDecimal("10")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(expectedMsg);
+
+        // Zero or negative performance materiality
+        assertThatThrownBy(() -> service.save("T1", new BigDecimal("1000"), BigDecimal.ZERO, new BigDecimal("50")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(expectedMsg);
+
+        // Negative de minimis threshold
+        assertThatThrownBy(() -> service.save("T1", new BigDecimal("1000"), new BigDecimal("500"), new BigDecimal("-1")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(expectedMsg);
+
+        // Performance materiality > planning materiality
+        assertThatThrownBy(() -> service.save("T1", new BigDecimal("1000"), new BigDecimal("1000.01"), new BigDecimal("50")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(expectedMsg);
+
+        // De minimis > performance materiality
+        assertThatThrownBy(() -> service.save("T1", new BigDecimal("1000"), new BigDecimal("500"), new BigDecimal("500.01")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(expectedMsg);
+
+        // Zero de minimis is valid (boundary)
+        when(configs.save(any(MaterialityConfig.class))).thenAnswer(inv -> inv.getArgument(0));
+        MaterialityConfig zeroDeMinimis = service.save("T-Zero", new BigDecimal("1000"), new BigDecimal("500"), BigDecimal.ZERO);
+        assertThat(zeroDeMinimis).isNotNull();
+        assertThat(zeroDeMinimis.isActive()).isTrue();
+
+        // Equal thresholds are valid (boundary)
+        MaterialityConfig equalConfig = service.save("T-Equal", new BigDecimal("1000"), new BigDecimal("1000"), new BigDecimal("1000"));
+        assertThat(equalConfig).isNotNull();
+        assertThat(equalConfig.isActive()).isTrue();
+    }
+
+    @Test
+    void shouldClassifyBookingAtExactBoundaries() {
+        MaterialityConfig config = config(10L); // planning: 1000, performance: 500, deMinimis: 100
         when(configs.findFirstByActiveTrueOrderByCreatedAtDesc()).thenReturn(Optional.of(config));
 
-        assertThat(service.evaluate(booking(1L, "50")).classification()).isEqualTo("BELOW_THRESHOLD");
-        assertThat(service.evaluate(booking(1L, "50")).material()).isFalse();
+        // Exactly below de minimis (99.99)
+        assertThat(service.evaluate(booking(1L, "99.99")).classification()).isEqualTo("BELOW_THRESHOLD");
+        assertThat(service.evaluate(booking(1L, "99.99")).material()).isFalse();
 
-        assertThat(service.evaluate(booking(2L, "100")).classification()).isEqualTo("DE_MINIMIS");
-        assertThat(service.evaluate(booking(2L, "100")).material()).isTrue();
+        // Exactly at de minimis (100.00)
+        assertThat(service.evaluate(booking(2L, "100.00")).classification()).isEqualTo("DE_MINIMIS");
+        assertThat(service.evaluate(booking(2L, "100.00")).material()).isTrue();
 
-        assertThat(service.evaluate(booking(3L, "500")).classification()).isEqualTo("PERFORMANCE");
-        assertThat(service.evaluate(booking(3L, "500")).material()).isTrue();
+        // Between de minimis and performance (499.99)
+        assertThat(service.evaluate(booking(3L, "499.99")).classification()).isEqualTo("DE_MINIMIS");
 
-        assertThat(service.evaluate(booking(4L, "1000")).classification()).isEqualTo("OVERALL");
-        assertThat(service.evaluate(booking(4L, "1000")).material()).isTrue();
+        // Exactly at performance (500.00)
+        assertThat(service.evaluate(booking(4L, "500.00")).classification()).isEqualTo("PERFORMANCE");
+        assertThat(service.evaluate(booking(4L, "500.00")).material()).isTrue();
 
-        assertThat(service.evaluate(booking(5L, "-1000")).amount()).isEqualByComparingTo("1000");
+        // Between performance and planning (999.99)
+        assertThat(service.evaluate(booking(5L, "999.99")).classification()).isEqualTo("PERFORMANCE");
+
+        // Exactly at planning (1000.00)
+        assertThat(service.evaluate(booking(6L, "1000.00")).classification()).isEqualTo("OVERALL");
+        assertThat(service.evaluate(booking(6L, "1000.00")).material()).isTrue();
     }
 
     @Test
@@ -193,18 +256,28 @@ class MaterialityServiceTest {
 
         Finding deMinimisFinding = findingCaptor.getAllValues().get(0);
         assertThat(deMinimisFinding.getRiskLevel()).isEqualTo("LOW");
+        assertThat(deMinimisFinding.getMaterialityClassification()).isEqualTo("DE_MINIMIS");
+        assertThat(deMinimisFinding.getRuleName()).isEqualTo("MATERIALITY_THRESHOLD");
+        assertThat(deMinimisFinding.getAlertDescription()).isEqualTo("Booking amount meets the DE_MINIMIS materiality threshold");
+        assertThat(deMinimisFinding.getStatus()).isEqualTo("NEW");
         assertThat(deMinimisFinding.getRuleVersion()).isEqualTo("1");
         assertThat(deMinimisFinding.getRunContext()).isEqualTo("ACC1");
         assertThat(deMinimisFinding.getAnalysisRunId()).isEqualTo("MAT-10");
 
         Finding perfFinding = findingCaptor.getAllValues().get(1);
         assertThat(perfFinding.getRiskLevel()).isEqualTo("MEDIUM");
+        assertThat(perfFinding.getMaterialityClassification()).isEqualTo("PERFORMANCE");
 
         Finding overallFinding = findingCaptor.getAllValues().get(2);
         assertThat(overallFinding.getRiskLevel()).isEqualTo("HIGH");
+        assertThat(overallFinding.getMaterialityClassification()).isEqualTo("OVERALL");
 
+        ArgumentCaptor<String> snapshotCaptor = ArgumentCaptor.forClass(String.class);
         verify(audit, times(3)).record(eq("FINDING"), anyLong(), eq("FINDING_CREATED"), eq("SYSTEM_MATERIALITY"),
-                eq("Finding created by materiality evaluation"), isNull(), anyString());
+                eq("Finding created by materiality evaluation"), isNull(), snapshotCaptor.capture());
+        for (String snapshot : snapshotCaptor.getAllValues()) {
+            assertThat(snapshot).contains("bookingId=").contains(";materialityConfigId=10").contains(";classification=").contains(";riskLevel=").contains(";status=NEW");
+        }
     }
 
     @Test

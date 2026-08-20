@@ -13,6 +13,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,18 +27,34 @@ class ImportOrchestratorServiceTest {
     private BookingRepository bookingRepository;
     private ImportJobRepository importJobRepository;
     private ImportJobProtocolEntryRepository protocolEntryRepository;
+    private List<ImportJob> jobSnapshots;
 
     @BeforeEach
     void setUp() {
         bookingRepository = mock(BookingRepository.class);
         importJobRepository = mock(ImportJobRepository.class);
         protocolEntryRepository = mock(ImportJobProtocolEntryRepository.class);
+        jobSnapshots = new ArrayList<>();
 
         when(importJobRepository.save(any(ImportJob.class))).thenAnswer(invocation -> {
             ImportJob job = invocation.getArgument(0);
             if (job.getId() == null) {
                 job.setId(10L);
             }
+            ImportJob copy = new ImportJob();
+            copy.setId(job.getId());
+            copy.setTenantId(job.getTenantId());
+            copy.setProjectId(job.getProjectId());
+            copy.setDocumentId(job.getDocumentId());
+            copy.setSourceType(job.getSourceType());
+            copy.setStatus(job.getStatus());
+            copy.setStartedAt(job.getStartedAt());
+            copy.setFinishedAt(job.getFinishedAt());
+            copy.setRecordCount(job.getRecordCount());
+            copy.setImportedCount(job.getImportedCount());
+            copy.setInvalidCount(job.getInvalidCount());
+            copy.setChecksum(job.getChecksum());
+            jobSnapshots.add(copy);
             return job;
         });
     }
@@ -84,7 +101,46 @@ class ImportOrchestratorServiceTest {
         assertThat(result.finishedAt()).isNotNull();
 
         verify(bookingRepository).saveAll(anyList());
-        verify(protocolEntryRepository, atLeastOnce()).save(any(ImportJobProtocolEntry.class));
+
+        ArgumentCaptor<ImportJob> jobCaptor = ArgumentCaptor.forClass(ImportJob.class);
+        verify(importJobRepository, atLeast(2)).save(jobCaptor.capture());
+        List<ImportJob> savedJobs = jobCaptor.getAllValues();
+
+        ImportJob completedJob = savedJobs.get(savedJobs.size() - 1);
+        assertThat(completedJob.getTenantId()).isEqualTo("T1");
+        assertThat(completedJob.getProjectId()).isEqualTo("P1");
+        assertThat(completedJob.getDocumentId()).isEqualTo("D1");
+        assertThat(completedJob.getSourceType()).isEqualTo("GENERIC");
+        assertThat(completedJob.getStatus()).isEqualTo("COMPLETED");
+        assertThat(completedJob.getStartedAt()).isNotNull();
+        assertThat(completedJob.getFinishedAt()).isNotNull();
+        assertThat(completedJob.getRecordCount()).isEqualTo(2);
+        assertThat(completedJob.getImportedCount()).isEqualTo(1);
+        assertThat(completedJob.getInvalidCount()).isEqualTo(2);
+        assertThat(completedJob.getChecksum()).isEqualTo(result.checksum());
+
+        ImportJob initialJob = jobSnapshots.get(0);
+        assertThat(initialJob.getStatus()).isEqualTo("RUNNING");
+        assertThat(initialJob.getSourceType()).isEqualTo("UNKNOWN");
+        assertThat(initialJob.getStartedAt()).isNotNull();
+        assertThat(initialJob.getRecordCount()).isEqualTo(0);
+        assertThat(initialJob.getImportedCount()).isEqualTo(0);
+        assertThat(initialJob.getInvalidCount()).isEqualTo(0);
+
+        ImportJob secondJob = jobSnapshots.get(1);
+        assertThat(secondJob.getSourceType()).isEqualTo("GENERIC");
+
+        ArgumentCaptor<ImportJobProtocolEntry> protocolCaptor = ArgumentCaptor.forClass(ImportJobProtocolEntry.class);
+        verify(protocolEntryRepository, atLeastOnce()).save(protocolCaptor.capture());
+        List<ImportJobProtocolEntry> protocolEntries = protocolCaptor.getAllValues();
+        assertThat(protocolEntries).isNotEmpty();
+        for (int i = 0; i < protocolEntries.size(); i++) {
+            ImportJobProtocolEntry entry = protocolEntries.get(i);
+            assertThat(entry.getImportJobId()).isEqualTo(10L);
+            assertThat(entry.getEntryIndex()).isEqualTo(i);
+            assertThat(entry.getLevel()).isEqualTo("VALIDATION");
+            assertThat(entry.getMessage()).isNotEmpty();
+        }
     }
 
     @Test
@@ -172,8 +228,12 @@ class ImportOrchestratorServiceTest {
                 duplicatePayload.setSourceAccount(valid.getSourceAccount());
                 duplicatePayload.setDestinationAccount(valid.getDestinationAccount());
 
+                Booking duplicateForeignId = createBooking(200L, "DuplicateForeign", new BigDecimal("60.00"));
+                duplicateForeignId.setSourceAccount("DE777");
+                duplicateForeignId.setDestinationAccount("DE888");
+
                 return List.of(valid, missingTransactionId, nonPositiveTransactionId, futureTimestamp,
-                        invalidSourceAccount, invalidDestAccount, duplicatePayload);
+                        invalidSourceAccount, invalidDestAccount, duplicatePayload, duplicateForeignId);
             }
         };
 
@@ -187,13 +247,62 @@ class ImportOrchestratorServiceTest {
         ImportJobResult result = service.importFrom("open-banking");
 
         assertThat(result.importedCount()).isEqualTo(0);
-        assertThat(result.invalidCount()).isGreaterThanOrEqualTo(6);
+        assertThat(result.invalidCount()).isGreaterThanOrEqualTo(7);
         assertThat(result.validationErrors().stream().map(ImportValidationError::error))
                 .anyMatch(error -> error.contains("OpenBanking transaction id is required and must be positive"))
                 .anyMatch(error -> error.contains("timestamp is in the future"))
                 .anyMatch(error -> error.contains("OpenBanking source account id format is invalid"))
                 .anyMatch(error -> error.contains("OpenBanking destination account id format is invalid"))
-                .anyMatch(error -> error.contains("Duplicate OpenBanking transaction payload"));
+                .anyMatch(error -> error.contains("Duplicate OpenBanking transaction payload"))
+                .anyMatch(error -> error.contains("Duplicate foreign transaction id"));
+    }
+
+    @Test
+    void shouldSelectMatchingAdapterWhenMultipleAdaptersConfigured() {
+        TransactionSourcePort ignoredPort = new TransactionSourcePort() {
+            @Override
+            public boolean supports(Object source) {
+                return false;
+            }
+
+            @Override
+            public String sourceType() {
+                return "IGNORED";
+            }
+
+            @Override
+            public List<Booking> importTransactions(Object source) {
+                return List.of();
+            }
+        };
+
+        TransactionSourcePort matchingPort = new TransactionSourcePort() {
+            @Override
+            public boolean supports(Object source) {
+                return "matching".equals(source);
+            }
+
+            @Override
+            public String sourceType() {
+                return "MATCHING_TYPE";
+            }
+
+            @Override
+            public List<Booking> importTransactions(Object source) {
+                return List.of(createBooking(1L, "Test", new BigDecimal("100.00")));
+            }
+        };
+
+        ImportOrchestratorService service = new ImportOrchestratorService(
+                List.of(ignoredPort, matchingPort),
+                bookingRepository,
+                importJobRepository,
+                protocolEntryRepository
+        );
+
+        ImportJobResult result = service.importFrom("matching");
+        assertThat(result.sourceType()).isEqualTo("MATCHING_TYPE");
+        assertThat(result.importedCount()).isEqualTo(1);
     }
 
     @Test
@@ -213,6 +322,7 @@ class ImportOrchestratorServiceTest {
         verify(importJobRepository, atLeastOnce()).save(jobCaptor.capture());
         ImportJob failedJob = jobCaptor.getAllValues().get(jobCaptor.getAllValues().size() - 1);
         assertThat(failedJob.getStatus()).isEqualTo("FAILED");
+        assertThat(failedJob.getFinishedAt()).isNotNull();
         assertThat(failedJob.getErrorMessage()).contains("No import adapter supports source");
 
         verify(protocolEntryRepository).save(any(ImportJobProtocolEntry.class));
@@ -224,6 +334,11 @@ class ImportOrchestratorServiceTest {
             @Override
             public boolean supports(Object source) {
                 return true;
+            }
+
+            @Override
+            public String sourceType() {
+                return "FAILING";
             }
 
             @Override
@@ -247,7 +362,53 @@ class ImportOrchestratorServiceTest {
         verify(importJobRepository, atLeastOnce()).save(jobCaptor.capture());
         ImportJob failedJob = jobCaptor.getAllValues().get(jobCaptor.getAllValues().size() - 1);
         assertThat(failedJob.getStatus()).isEqualTo("FAILED");
+        assertThat(failedJob.getFinishedAt()).isNotNull();
         assertThat(failedJob.getErrorMessage()).isEqualTo("Simulated network failure");
+
+        ArgumentCaptor<ImportJobProtocolEntry> protocolCaptor = ArgumentCaptor.forClass(ImportJobProtocolEntry.class);
+        verify(protocolEntryRepository).save(protocolCaptor.capture());
+        ImportJobProtocolEntry protocolEntry = protocolCaptor.getValue();
+        assertThat(protocolEntry.getImportJobId()).isEqualTo(10L);
+        assertThat(protocolEntry.getEntryIndex()).isEqualTo(0);
+        assertThat(protocolEntry.getLevel()).isEqualTo("ERROR");
+        assertThat(protocolEntry.getMessage()).isEqualTo("Simulated network failure");
+    }
+
+    @Test
+    void shouldComputeDifferentChecksumForDifferentBookingData() {
+        Booking b1 = createBooking(1L, "Payment 1", new BigDecimal("100.00"));
+        b1.setSourceAccount("ACC1");
+        b1.setDestinationAccount("ACC2");
+        b1.setCurrency("EUR");
+        b1.setTransactionTimestamp(LocalDateTime.of(2026, 8, 1, 10, 0));
+
+        Booking b2 = createBooking(1L, "Payment 2", new BigDecimal("100.00"));
+        b2.setSourceAccount("ACC1");
+        b2.setDestinationAccount("ACC2");
+        b2.setCurrency("EUR");
+        b2.setTransactionTimestamp(LocalDateTime.of(2026, 8, 1, 10, 0));
+
+        TransactionSourcePort port1 = new TransactionSourcePort() {
+            @Override public boolean supports(Object source) { return "s1".equals(source); }
+            @Override public String sourceType() { return "CSV"; }
+            @Override public List<Booking> importTransactions(Object source) { return List.of(b1); }
+        };
+        TransactionSourcePort port2 = new TransactionSourcePort() {
+            @Override public boolean supports(Object source) { return "s2".equals(source); }
+            @Override public String sourceType() { return "CSV"; }
+            @Override public List<Booking> importTransactions(Object source) { return List.of(b2); }
+        };
+
+        ImportOrchestratorService service = new ImportOrchestratorService(
+                List.of(port1, port2), bookingRepository, importJobRepository, protocolEntryRepository
+        );
+
+        ImportJobResult res1 = service.importFrom("s1");
+        ImportJobResult res2 = service.importFrom("s2");
+
+        assertThat(res1.checksum()).isNotNull().hasSize(64);
+        assertThat(res2.checksum()).isNotNull().hasSize(64);
+        assertThat(res1.checksum()).isNotEqualTo(res2.checksum());
     }
 
     private Booking createBooking(Long foreignId, String description, BigDecimal amount) {

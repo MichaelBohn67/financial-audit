@@ -110,9 +110,15 @@ class MaterialityApiControllerTest {
     @Test
     @WithMockUser(username = "auditor", roles = "AUDITOR")
     void shouldEvaluateAccount() throws Exception {
-        when(materialityService.evaluateAll("ACC-100")).thenReturn(List.of());
+        MaterialityService.MaterialityResult res = new MaterialityService.MaterialityResult(
+                10L, new BigDecimal("1000.00"), "OVERALL", true, 99L);
+        when(materialityService.evaluateAll("ACC-100")).thenReturn(List.of(res));
 
         mockMvc.perform(get("/api/materiality/accounts/ACC-100"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].bookingId").value(10))
+                .andExpect(jsonPath("$[0].classification").value("OVERALL"))
+                .andExpect(jsonPath("$[0].material").value(true))
+                .andExpect(jsonPath("$[0].findingId").value(99));
     }
 }

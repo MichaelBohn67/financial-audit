@@ -106,7 +106,12 @@ class BenfordAnalysisServiceTest {
             assertThat(f.getAnalysisRunId()).isEqualTo(result.runId());
             assertThat(f.getRuleName()).startsWith("BENFORD_DIGIT_");
             assertThat(f.getBooking()).isNotNull();
+            assertThat(f.getAlertDescription()).contains("Benford deviation for leading digit");
         }
+
+        ArgumentCaptor<BenfordAnalysisRun> runCaptor = ArgumentCaptor.forClass(BenfordAnalysisRun.class);
+        verify(runRepository, times(2)).save(runCaptor.capture());
+        assertThat(runCaptor.getAllValues().get(1).getSuspiciousDigitCount()).isEqualTo(result.suspiciousDigitCount());
 
         ArgumentCaptor<String> auditPayloadCaptor = ArgumentCaptor.forClass(String.class);
         verify(auditTrailWriter, times(result.suspiciousDigitCount())).record(

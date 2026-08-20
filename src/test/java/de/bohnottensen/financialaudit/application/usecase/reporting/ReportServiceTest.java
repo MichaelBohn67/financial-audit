@@ -38,6 +38,7 @@ class ReportServiceTest {
 
         assertThat(result.getName()).isEqualTo("AML-Report");
         assertThat(result.getVersion()).isEqualTo("1.0.0");
+        assertThat(result.getDescription()).isEqualTo("AML findings report");
         assertThat(result.isActive()).isTrue();
     }
 

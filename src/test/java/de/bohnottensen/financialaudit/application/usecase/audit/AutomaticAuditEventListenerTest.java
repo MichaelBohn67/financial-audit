@@ -160,6 +160,43 @@ class AutomaticAuditEventListenerTest {
     }
 
     @Test
+    void shouldTruncateSnapshotWhenExceeding4000Characters() {
+        Booking booking = new Booking();
+        booking.setId(99L);
+
+        String longValue = "A".repeat(4500);
+        propertyNames = new String[]{"description"};
+        Object[] state = new Object[]{longValue};
+
+        PostInsertEvent event = new PostInsertEvent(booking, 99L, state, persister, session);
+        listener.onPostInsert(event);
+
+        assertThat(persistedEntities).hasSize(1);
+        AuditEvent recorded = (AuditEvent) persistedEntities.get(0);
+        assertThat(recorded.getCurrentValue()).hasSize(4000);
+        assertThat(recorded.getCurrentValue()).startsWith("description=AAAA");
+    }
+
+    @Test
+    void shouldHandleBoundaryLengthsAt4000Characters() {
+        Booking booking = new Booking();
+        booking.setId(99L);
+
+        // "description=" has length 12, trailing ";" adds 1 -> 13 chars overhead. 4000 - 13 = 3987
+        String exactValue = "B".repeat(3987);
+        propertyNames = new String[]{"description"};
+        Object[] state = new Object[]{exactValue};
+
+        PostInsertEvent event = new PostInsertEvent(booking, 99L, state, persister, session);
+        listener.onPostInsert(event);
+
+        assertThat(persistedEntities).hasSize(1);
+        AuditEvent recorded = (AuditEvent) persistedEntities.get(0);
+        assertThat(recorded.getCurrentValue()).hasSize(4000);
+        assertThat(recorded.getCurrentValue()).endsWith(";");
+    }
+
+    @Test
     void shouldIgnoreNonAuditedEntitiesAndNullIdAndAuditEvents() {
         Object nonAudited = new Object();
         PostInsertEvent event1 = new PostInsertEvent(nonAudited, 1L, new Object[]{}, persister, session);

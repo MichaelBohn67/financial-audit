@@ -34,12 +34,14 @@ class ReportExportServiceTest {
 
         Booking booking1 = booking(10L, new BigDecimal("5000.00"));
         Booking booking2 = booking(11L, new BigDecimal("2500.00"));
+        Booking bookingNullAmount = booking(12L, null);
 
         Finding finding1 = finding(100L, booking1, "HIGH_AMOUNT", "HIGH", "NEW");
         Finding finding2 = finding(101L, booking2, "STRUCTURING", "MEDIUM", "ESCALATED");
+        Finding finding3 = finding(102L, null, "MISSING_DOC", "LOW", "NEW");
 
-        when(findingRepo.findAll()).thenReturn(List.of(finding1, finding2));
-        when(bookingRepo.findAll()).thenReturn(List.of(booking1, booking2));
+        when(findingRepo.findAll()).thenReturn(List.of(finding1, finding2, finding3));
+        when(bookingRepo.findAll()).thenReturn(List.of(booking1, booking2, bookingNullAmount));
         when(samplingRunRepo.findAll()).thenReturn(List.of());
 
         ReportContent content = service.assemble(1L);
@@ -48,16 +50,19 @@ class ReportExportServiceTest {
         assertThat(content.templateVersion()).isEqualTo("1.0.0");
 
         ReportContent.FindingsSummary summary = content.findingsSummary();
-        assertThat(summary.totalFindings()).isEqualTo(2);
+        assertThat(summary.totalFindings()).isEqualTo(3);
         assertThat(summary.highRisk()).isEqualTo(1);
         assertThat(summary.mediumRisk()).isEqualTo(1);
-        assertThat(summary.lowRisk()).isEqualTo(0);
-        assertThat(summary.newFindings()).isEqualTo(1);
+        assertThat(summary.lowRisk()).isEqualTo(1);
+        assertThat(summary.newFindings()).isEqualTo(2);
         assertThat(summary.escalatedFindings()).isEqualTo(1);
-        assertThat(summary.entries()).hasSize(2);
+        assertThat(summary.entries()).hasSize(3);
+        assertThat(summary.entries().get(0).bookingId()).isEqualTo(10L);
+        assertThat(summary.entries().get(1).bookingId()).isEqualTo(11L);
+        assertThat(summary.entries().get(2).bookingId()).isNull();
 
         ReportContent.BookingStats stats = content.bookingStats();
-        assertThat(stats.totalBookings()).isEqualTo(2);
+        assertThat(stats.totalBookings()).isEqualTo(3);
         assertThat(stats.totalAmount()).isEqualByComparingTo(new BigDecimal("7500.00"));
         assertThat(stats.bookingsWithFindings()).isEqualTo(2);
     }

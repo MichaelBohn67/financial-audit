@@ -47,7 +47,9 @@ class CsvImportAdapterTest {
     void shouldReturnEmptyListForEmptyStream() {
         InputStream emptyStream = new ByteArrayInputStream(new byte[0]);
         List<Booking> bookings = adapter.importTransactions(emptyStream);
-        assertThat(bookings).isEmpty();
+        assertThat(bookings).isNotNull().isEmpty();
+        bookings.add(new Booking());
+        assertThat(bookings).hasSize(1);
     }
 
     @Test

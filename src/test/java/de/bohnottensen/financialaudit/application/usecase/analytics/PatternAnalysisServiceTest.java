@@ -81,7 +81,32 @@ class PatternAnalysisServiceTest {
             assertThat(issue.getSeverity()).isNotNull();
             assertThat(issue.getIssueType()).isNotNull();
             assertThat(issue.getPrimaryBookingId()).isNotNull();
+            assertThat(issue.getReferenceKey()).isNotNull().isNotEmpty();
+            assertThat(issue.getDescription()).isNotNull().isNotEmpty();
+            assertThat(issue.getOccurrenceCount()).isGreaterThan(0);
+            assertThat(issue.getDetailsJson()).isNotNull().isNotEmpty();
         }
+
+        PatternAnalysisIssue duplicateIssue = issueCaptor.getAllValues().stream()
+                .filter(i -> "DUPLICATE_DOCUMENT_NUMBER".equals(i.getIssueType())).findFirst().orElseThrow();
+        assertThat(duplicateIssue.getReferenceKey()).isEqualTo("foreignTransactionId=100");
+        assertThat(duplicateIssue.getDescription()).contains("Duplicate document number detected for foreign transaction id 100");
+        assertThat(duplicateIssue.getOccurrenceCount()).isEqualTo(2);
+        assertThat(duplicateIssue.getDetailsJson()).contains("\"foreignTransactionId\":\"100\"").contains("\"bookingIds\":\"1,2\"");
+
+        PatternAnalysisIssue gapIssue = issueCaptor.getAllValues().stream()
+                .filter(i -> "DOCUMENT_NUMBER_GAP".equals(i.getIssueType())).findFirst().orElseThrow();
+        assertThat(gapIssue.getReferenceKey()).isEqualTo("gap=100-103");
+        assertThat(gapIssue.getDescription()).contains("Gap in document numbers between 100 and 103");
+        assertThat(gapIssue.getOccurrenceCount()).isEqualTo(2); // 103 - 100 - 1 = 2
+        assertThat(gapIssue.getDetailsJson()).contains("\"previous\":\"100\"").contains("\"current\":\"103\"").contains("\"missingCount\":\"2\"");
+
+        PatternAnalysisIssue repeatedIssue = issueCaptor.getAllValues().stream()
+                .filter(i -> "REPEATED_TRANSFER_PATTERN".equals(i.getIssueType())).findFirst().orElseThrow();
+        assertThat(repeatedIssue.getReferenceKey()).isEqualTo("DE777|DE888|EUR|999");
+        assertThat(repeatedIssue.getDescription()).isEqualTo("Repeated transfer pattern detected within 24 hours");
+        assertThat(repeatedIssue.getOccurrenceCount()).isEqualTo(3);
+        assertThat(repeatedIssue.getDetailsJson()).contains("\"bookingIds\":\"4,5,6\"");
 
         ArgumentCaptor<Finding> findingCaptor = ArgumentCaptor.forClass(Finding.class);
         verify(findingRepository, times(result.issueCount())).save(findingCaptor.capture());
@@ -92,7 +117,13 @@ class PatternAnalysisServiceTest {
             assertThat(f.getRunContext()).isEqualTo("task13");
             assertThat(f.getAnalysisRunId()).isEqualTo(result.runId());
             assertThat(f.getRuleName()).startsWith("PATTERN_");
+            assertThat(f.getBooking()).isNotNull();
+            assertThat(f.getAlertDescription()).isNotNull().isNotEmpty();
         }
+
+        ArgumentCaptor<PatternAnalysisRun> runCaptor = ArgumentCaptor.forClass(PatternAnalysisRun.class);
+        verify(runRepository, times(2)).save(runCaptor.capture());
+        assertThat(runCaptor.getAllValues().get(1).getIssueCount()).isEqualTo(result.issueCount());
 
         ArgumentCaptor<String> auditPayloadCaptor = ArgumentCaptor.forClass(String.class);
         verify(auditTrailWriter, times(result.issueCount())).record(
@@ -109,7 +140,8 @@ class PatternAnalysisServiceTest {
                     .contains(";status=NEW")
                     .contains(";analysisRunId=" + result.runId())
                     .contains(";ruleVersion=v1")
-                    .contains(";runContext=task13");
+                    .contains(";runContext=task13")
+                    .contains("bookingId=");
         }
     }
 

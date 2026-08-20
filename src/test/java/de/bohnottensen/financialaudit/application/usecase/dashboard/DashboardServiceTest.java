@@ -87,6 +87,10 @@ class DashboardServiceTest {
         assertThat(metrics.auditProgress().signedOffWorkpapers()).isEqualTo(2);
         assertThat(metrics.auditProgress().completionPercentage()).isEqualByComparingTo("50.0");
         assertThat(metrics.latestReports()).hasSize(1);
+        assertThat(metrics.latestReports().get(0).id()).isEqualTo(7L);
+        assertThat(metrics.latestReports().get(0).name()).isEqualTo("Quarterly report");
+        assertThat(metrics.latestReports().get(0).status()).isEqualTo("COMPLETED");
+        assertThat(metrics.latestReports().get(0).generatedAt()).isEqualTo(LocalDateTime.of(2026, 8, 19, 12, 0));
         assertThat(metrics.recentAuditEvents()).hasSize(1);
         assertThat(metrics.recentAuditEvents().get(0).id()).isEqualTo(100L);
         assertThat(metrics.recentAuditEvents().get(0).entityType()).isEqualTo("BOOKING");

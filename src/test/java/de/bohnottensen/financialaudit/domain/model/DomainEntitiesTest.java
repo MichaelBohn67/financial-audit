@@ -382,4 +382,62 @@ class DomainEntitiesTest {
         assertThat(ra.getComment()).isEqualTo("Approved");
         assertThat(ra.getCreatedAt()).isNotNull();
     }
+
+    @Test
+    void testPrePersistAndPreUpdateLifecycleBranches() throws Exception {
+        LocalDateTime fixedTime = LocalDateTime.of(2020, 1, 1, 12, 0);
+
+        // Workpaper with null status
+        Workpaper wpDefault = new Workpaper();
+        wpDefault.onCreate();
+        assertThat(wpDefault.getStatus()).isEqualTo("DRAFT");
+        assertThat(wpDefault.getCreatedAt()).isNotNull();
+        assertThat(wpDefault.getUpdatedAt()).isEqualTo(wpDefault.getCreatedAt());
+
+        // Workpaper with explicit status
+        Workpaper wpCustom = new Workpaper();
+        wpCustom.setStatus("APPROVED");
+        wpCustom.onCreate();
+        assertThat(wpCustom.getStatus()).isEqualTo("APPROVED");
+        wpCustom.onUpdate();
+        assertThat(wpCustom.getUpdatedAt()).isNotNull();
+
+        // Finding with all nulls in onCreate
+        Finding fDefault = new Finding();
+        fDefault.onCreate();
+        assertThat(fDefault.getStatus()).isEqualTo("NEW");
+        assertThat(fDefault.getAnalysisRunId()).isEqualTo("DEFAULT");
+        assertThat(fDefault.getRuleVersion()).isEqualTo("v0");
+        assertThat(fDefault.getRunContext()).isEqualTo("default");
+        assertThat(fDefault.getCreatedAt()).isNotNull();
+
+        // Finding with explicit fields in onCreate
+        Finding fCustom = new Finding();
+        fCustom.setStatus("EVALUATED");
+        fCustom.setAnalysisRunId("CUSTOM_RUN");
+        fCustom.setRuleVersion("v2");
+        fCustom.setRunContext("custom_context");
+        fCustom.onCreate();
+        assertThat(fCustom.getStatus()).isEqualTo("EVALUATED");
+        assertThat(fCustom.getAnalysisRunId()).isEqualTo("CUSTOM_RUN");
+        assertThat(fCustom.getRuleVersion()).isEqualTo("v2");
+        assertThat(fCustom.getRunContext()).isEqualTo("custom_context");
+
+        // MaterialityConfig when createdAt is null vs preset
+        MaterialityConfig mcNull = new MaterialityConfig();
+        mcNull.onCreate();
+        assertThat(mcNull.getCreatedAt()).isNotNull();
+
+        MaterialityConfig mcPreset = new MaterialityConfig();
+        java.lang.reflect.Field mcField = MaterialityConfig.class.getDeclaredField("createdAt");
+        mcField.setAccessible(true);
+        mcField.set(mcPreset, fixedTime);
+        mcPreset.onCreate();
+        assertThat(mcPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        // Booking onCreate
+        Booking b = new Booking();
+        b.onCreate();
+        assertThat(b.getCreatedAt()).isNotNull();
+    }
 }

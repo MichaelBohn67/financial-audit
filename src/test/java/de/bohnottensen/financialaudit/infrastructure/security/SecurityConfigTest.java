@@ -23,6 +23,7 @@ class SecurityConfigTest {
     @Test
     void shouldExposeSecurityFilterChain() {
         assertThat(securityFilterChain).isNotNull();
+        assertThat(securityFilterChain.getFilters()).isNotEmpty();
     }
 
     @Test

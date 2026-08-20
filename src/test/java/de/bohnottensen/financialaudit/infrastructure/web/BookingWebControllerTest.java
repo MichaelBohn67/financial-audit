@@ -117,6 +117,23 @@ class BookingWebControllerTest {
                         .param("currency", "EUR"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/bookings"));
+
+        org.mockito.ArgumentCaptor<Booking> bookingCaptor = org.mockito.ArgumentCaptor.forClass(Booking.class);
+        org.mockito.Mockito.verify(bookingRepository, org.mockito.Mockito.atLeastOnce()).save(bookingCaptor.capture());
+        Booking captured = bookingCaptor.getValue();
+        org.assertj.core.api.Assertions.assertThat(captured.getTransactionTimestamp()).isNotNull();
+
+        org.mockito.ArgumentCaptor<String> auditCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
+        org.mockito.Mockito.verify(auditTrailWriter, org.mockito.Mockito.atLeastOnce()).record(
+                org.mockito.ArgumentMatchers.eq("BOOKING"),
+                org.mockito.ArgumentMatchers.eq(2L),
+                org.mockito.ArgumentMatchers.eq("BOOKING_CREATED"),
+                org.mockito.ArgumentMatchers.eq("WEB_USER"),
+                org.mockito.ArgumentMatchers.eq("Booking created"),
+                org.mockito.ArgumentMatchers.isNull(),
+                auditCaptor.capture()
+        );
+        org.assertj.core.api.Assertions.assertThat(auditCaptor.getValue()).contains("description=Auto Timestamp Booking").contains("amount=150.00");
     }
 
     @Test
@@ -143,6 +160,24 @@ class BookingWebControllerTest {
                         .param("currency", "EUR"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/bookings"));
+
+        org.mockito.ArgumentCaptor<Booking> bookingCaptor = org.mockito.ArgumentCaptor.forClass(Booking.class);
+        org.mockito.Mockito.verify(bookingRepository, org.mockito.Mockito.atLeastOnce()).save(bookingCaptor.capture());
+        Booking captured = bookingCaptor.getValue();
+        org.assertj.core.api.Assertions.assertThat(captured.getId()).isEqualTo(1L);
+        org.assertj.core.api.Assertions.assertThat(captured.getTransactionTimestamp()).isNotNull();
+
+        org.mockito.ArgumentCaptor<String> auditCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
+        org.mockito.Mockito.verify(auditTrailWriter, org.mockito.Mockito.atLeastOnce()).record(
+                org.mockito.ArgumentMatchers.eq("BOOKING"),
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.eq("BOOKING_UPDATED"),
+                org.mockito.ArgumentMatchers.eq("WEB_USER"),
+                org.mockito.ArgumentMatchers.eq("Booking updated"),
+                org.mockito.ArgumentMatchers.any(),
+                auditCaptor.capture()
+        );
+        org.assertj.core.api.Assertions.assertThat(auditCaptor.getValue()).contains("description=Updated Description").contains("amount=200.00");
     }
 
     @Test

@@ -76,21 +76,28 @@ class AnalyticsRulesUnitTest {
         Booking g2_3 = createPatternBooking("ACC3", "ACC4", "EUR", "700.00", LocalDateTime.parse("2026-08-02T09:00:00")); // +23h
         Booking g2_4 = createPatternBooking("ACC3", "ACC4", "EUR", "700.00", LocalDateTime.parse("2026-08-02T09:30:00"));
 
+        // Valid group with exactly 24 hours span
+        Booking gExact_1 = createPatternBooking("ACC7", "ACC8", "EUR", "150.00", LocalDateTime.parse("2026-08-01T10:00:00"));
+        Booking gExact_2 = createPatternBooking("ACC7", "ACC8", "EUR", "150.00", LocalDateTime.parse("2026-08-01T12:00:00"));
+        Booking gExact_3 = createPatternBooking("ACC7", "ACC8", "EUR", "150.00", LocalDateTime.parse("2026-08-02T10:00:00")); // exactly +24h
+
         // Valid group with >= 3 items exceeding 24h
         Booking g3_1 = createPatternBooking("ACC5", "ACC6", "EUR", "900.00", LocalDateTime.parse("2026-08-01T10:00:00"));
         Booking g3_2 = createPatternBooking("ACC5", "ACC6", "EUR", "900.00", LocalDateTime.parse("2026-08-02T15:00:00"));
         Booking g3_3 = createPatternBooking("ACC5", "ACC6", "EUR", "900.00", LocalDateTime.parse("2026-08-03T12:00:00"));
 
         List<AnalyticsRuleMatch> matches = rule.evaluate(List.of(
-                invalid1, invalid2, g1_1, g1_2, g2_1, g2_2, g2_3, g2_4, g3_1, g3_2, g3_3
+                invalid1, invalid2, g1_1, g1_2, g2_1, g2_2, g2_3, g2_4, gExact_1, gExact_2, gExact_3, g3_1, g3_2, g3_3
         ));
 
-        assertThat(matches).hasSize(1);
-        AnalyticsRuleMatch match = matches.get(0);
-        assertThat(match.booking()).isSameAs(g2_2);
-        assertThat(match.ruleName()).isEqualTo("PATTERN_REPEAT_RULE");
-        assertThat(match.alertDescription()).isEqualTo("Repeated transfer pattern detected within 24h for ACC3|ACC4|EUR|700.00");
-        assertThat(match.riskLevel()).isEqualTo("MEDIUM");
+        assertThat(matches).hasSize(2);
+        assertThat(matches.stream().map(AnalyticsRuleMatch::booking).toList())
+                .containsExactlyInAnyOrder(g2_2, gExact_2);
+        for (AnalyticsRuleMatch match : matches) {
+            assertThat(match.ruleName()).isEqualTo("PATTERN_REPEAT_RULE");
+            assertThat(match.alertDescription()).startsWith("Repeated transfer pattern detected within 24h for ");
+            assertThat(match.riskLevel()).isEqualTo("MEDIUM");
+        }
     }
 
     private Booking createBookingWithHour(int hour) {

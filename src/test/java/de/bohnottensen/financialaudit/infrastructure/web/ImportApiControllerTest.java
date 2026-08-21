@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -60,6 +61,22 @@ class ImportApiControllerTest {
                 .andExpect(jsonPath("$.sourceType").value("CSV"))
                 .andExpect(jsonPath("$.importedCount").value(2))
                 .andExpect(jsonPath("$.invalidCount").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "ASSISTANT")
+    void shouldRejectEmptyCsv() throws Exception {
+        when(scopeAccessPolicy.canAccessDocument(any(), any(), any(), any())).thenReturn(true);
+        MockMultipartFile empty = new MockMultipartFile("file", "empty.csv", "text/csv", new byte[0]);
+
+        assertThatThrownBy(() -> mockMvc.perform(multipart("/api/imports/csv")
+                        .file(empty)
+                        .with(csrf())
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1")
+                        .param("documentId", "DOC-1")).andReturn())
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("CSV file must not be empty");
     }
 
     @Test

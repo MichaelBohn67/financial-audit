@@ -24,6 +24,67 @@ import static org.mockito.Mockito.*;
 
 class ImportOrchestratorServiceTest {
 
+    @Test
+    void shouldRejectBlankImportContextFieldsAndDefaultBlankLabel() {
+        assertThatThrownBy(() -> new ImportRunContext(null, "P1", "D1", "label"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessage("tenantId must not be blank");
+        assertThatThrownBy(() -> new ImportRunContext("T1", " ", "D1", "label"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessage("projectId must not be blank");
+        assertThatThrownBy(() -> new ImportRunContext("T1", "P1", "", "label"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessage("documentId must not be blank");
+
+        assertThat(new ImportRunContext("T1", "P1", "D1", " ").asProtocolContext())
+                .isEqualTo("tenantId=T1;projectId=P1;documentId=D1;label=default");
+    }
+
+    @Test
+    void shouldRejectBlankOpenBankingSourceContextFields() {
+        assertThatThrownBy(() -> new OpenBankingImportSource(null, "P1", "A1"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessage("tenantId must not be blank");
+        assertThatThrownBy(() -> new OpenBankingImportSource("T1", " ", "A1"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessage("projectId must not be blank");
+    }
+
+    @Test
+    void shouldAcceptOpenBankingAccountIdLengthBoundaries() {
+        TransactionSourcePort source = new TransactionSourcePort() {
+            @Override
+            public boolean supports(Object value) { return true; }
+
+            @Override
+            public String sourceType() { return "OPEN_BANKING"; }
+
+            @Override
+            public List<Booking> importTransactions(Object value) {
+                Booking minimum = createBooking(1L, "minimum", new BigDecimal("10.00"));
+                minimum.setSourceAccount("DE123");
+                minimum.setDestinationAccount("AT123");
+
+                Booking maximum = createBooking(2L, "maximum", new BigDecimal("20.00"));
+                maximum.setSourceAccount("DE" + "A".repeat(32));
+                maximum.setDestinationAccount("AT" + "B".repeat(32));
+
+                Booking tooShort = createBooking(3L, "short", new BigDecimal("30.00"));
+                tooShort.setSourceAccount("DE12");
+                tooShort.setDestinationAccount("AT12");
+
+                Booking tooLong = createBooking(4L, "long", new BigDecimal("40.00"));
+                tooLong.setSourceAccount("DE" + "A".repeat(33));
+                tooLong.setDestinationAccount("AT" + "B".repeat(33));
+                return List.of(minimum, maximum, tooShort, tooLong);
+            }
+        };
+
+        ImportJobResult result = new ImportOrchestratorService(
+                List.of(source), bookingRepository, importJobRepository, protocolEntryRepository
+        ).importFrom("accounts");
+
+        assertThat(result.importedCount()).isEqualTo(2);
+        assertThat(result.invalidCount()).isEqualTo(4);
+        assertThat(result.validationErrors().stream().map(ImportValidationError::error))
+                .allMatch(error -> error.contains("account id format is invalid"));
+    }
+
     private BookingRepository bookingRepository;
     private ImportJobRepository importJobRepository;
     private ImportJobProtocolEntryRepository protocolEntryRepository;

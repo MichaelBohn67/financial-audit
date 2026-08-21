@@ -166,6 +166,30 @@ class ReportServiceTest {
         assertThat(versions.get(0).getVersion()).isEqualTo("2.0.0");
     }
 
+    @Test
+    void shouldFindRunByIdAndFindRunsByTemplate() {
+        ReportRun run = runningRun(12L);
+        when(runRepo.findById(12L)).thenReturn(Optional.of(run));
+        when(runRepo.findByReportNameAndTemplateVersionOrderByGeneratedAtDesc("AML-Report", "1.0.0"))
+                .thenReturn(List.of(run));
+
+        assertThat(service.findRunById(12L)).isSameAs(run);
+        assertThat(service.findRunsByTemplate("AML-Report", "1.0.0"))
+                .containsExactly(run);
+    }
+
+    @Test
+    void shouldGenerateLegacyRunWithAllFields() {
+        when(runRepo.save(any(ReportRun.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ReportRun result = service.generate("AML-Report", "legacy-1", "COMPLETED", "/tmp/report.pdf");
+
+        assertThat(result.getReportName()).isEqualTo("AML-Report");
+        assertThat(result.getTemplateVersion()).isEqualTo("legacy-1");
+        assertThat(result.getStatus()).isEqualTo("COMPLETED");
+        assertThat(result.getOutputPath()).isEqualTo("/tmp/report.pdf");
+    }
+
     private ReportTemplate activeTemplate(Long id, String name, String version) {
         ReportTemplate t = new ReportTemplate();
         t.setId(id);

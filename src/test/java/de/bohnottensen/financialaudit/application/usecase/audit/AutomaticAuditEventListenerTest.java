@@ -213,4 +213,26 @@ class AutomaticAuditEventListenerTest {
         assertThat(persistedEntities).isEmpty();
         assertThat(listener.requiresPostCommitHandling(persister)).isFalse();
     }
+
+    @Test
+    void shouldFormatNullAndVariousValueTypesAndUnknownEntityId() {
+        Booking booking = new Booking();
+        booking.setId(99L);
+        propertyNames = new String[]{"nullValue", "flag", "kind", "unannotated", "collection"};
+        Object[] state = new Object[]{null, false, TestKind.VALUE, new PlainValue(), List.of()};
+
+        listener.onPostInsert(new PostInsertEvent(booking, 99L, state, persister, session));
+
+        AuditEvent recorded = (AuditEvent) persistedEntities.get(0);
+        assertThat(recorded.getCurrentValue())
+                .contains("nullValue=null;")
+                .contains("flag=false;")
+                .contains("kind=VALUE;")
+                .contains("unannotated=PlainValue;")
+                .contains("collection=[collection size=0];");
+    }
+
+    static class PlainValue { }
+
+    enum TestKind { VALUE }
 }

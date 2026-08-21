@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -263,11 +264,19 @@ class DomainEntitiesTest {
     }
 
     @Test
-    void testSecurityRoleAndPermissionEntities() {
+    void testSecurityRoleAndPermissionEntities() throws Exception {
         Role role = new Role();
         role.setId(1L);
         role.setName("ROLE_AUDITOR");
         role.setDescription("Auditor role");
+        role.onCreate();
+        java.lang.reflect.Field roleCreatedAt = Role.class.getDeclaredField("createdAt");
+        roleCreatedAt.setAccessible(true);
+        LocalDateTime roleFixedTime = LocalDateTime.of(2026, 8, 1, 12, 0);
+        Role presetRole = new Role();
+        roleCreatedAt.set(presetRole, roleFixedTime);
+        presetRole.onCreate();
+        assertThat(presetRole.getCreatedAt()).isEqualTo(roleFixedTime);
 
         assertThat(role.getId()).isEqualTo(1L);
         assertThat(role.getName()).isEqualTo("ROLE_AUDITOR");
@@ -277,6 +286,14 @@ class DomainEntitiesTest {
         permission.setId(2L);
         permission.setName("READ_BOOKINGS");
         permission.setDescription("Read bookings");
+        permission.onCreate();
+        java.lang.reflect.Field permissionCreatedAt = Permission.class.getDeclaredField("createdAt");
+        permissionCreatedAt.setAccessible(true);
+        LocalDateTime permissionFixedTime = LocalDateTime.of(2026, 8, 1, 12, 1);
+        Permission presetPermission = new Permission();
+        permissionCreatedAt.set(presetPermission, permissionFixedTime);
+        presetPermission.onCreate();
+        assertThat(presetPermission.getCreatedAt()).isEqualTo(permissionFixedTime);
 
         assertThat(permission.getId()).isEqualTo(2L);
         assertThat(permission.getName()).isEqualTo("READ_BOOKINGS");
@@ -286,10 +303,19 @@ class DomainEntitiesTest {
         rp.setId(3L);
         rp.setRoleId(1L);
         rp.setPermissionId(2L);
+        rp.onCreate();
+        java.lang.reflect.Field assignedAt = RolePermission.class.getDeclaredField("assignedAt");
+        assignedAt.setAccessible(true);
+        LocalDateTime assignedFixedTime = LocalDateTime.of(2026, 8, 1, 12, 2);
+        RolePermission presetRolePermission = new RolePermission();
+        assignedAt.set(presetRolePermission, assignedFixedTime);
+        presetRolePermission.onCreate();
+        assertThat(presetRolePermission.getAssignedAt()).isEqualTo(assignedFixedTime);
 
         assertThat(rp.getId()).isEqualTo(3L);
         assertThat(rp.getRoleId()).isEqualTo(1L);
         assertThat(rp.getPermissionId()).isEqualTo(2L);
+        assertThat(rp.getAssignedAt()).isNotNull();
 
         UserRole ur = new UserRole();
         ur.setId(4L);
@@ -328,6 +354,12 @@ class DomainEntitiesTest {
         run.setStatus("COMPLETED");
         run.setTriggeredBy("auditor");
         run.setParameters("{}");
+        run.onCreate();
+        assertThat(run.getGeneratedAt()).isNotNull();
+
+        ReportRun pendingRun = new ReportRun();
+        pendingRun.onCreate();
+        assertThat(pendingRun.getStatus()).isEqualTo(ReportRunStatus.PENDING.name());
         run.setOutputPath("q1.json");
         run.setErrorMessage("none");
         run.setCompletedAt(LocalDateTime.now());
@@ -425,8 +457,15 @@ class DomainEntitiesTest {
 
         // MaterialityConfig when createdAt is null vs preset
         MaterialityConfig mcNull = new MaterialityConfig();
+        mcNull.setTolerableErrorRate(new java.math.BigDecimal("0.05"));
         mcNull.onCreate();
         assertThat(mcNull.getCreatedAt()).isNotNull();
+        assertThat(mcNull.getTolerableErrorRate()).isEqualByComparingTo("0.05");
+
+        AccountHolder holder = new AccountHolder();
+        List<Address> addresses = new java.util.ArrayList<>();
+        holder.setAddresses(addresses);
+        assertThat(holder.getAddresses()).isSameAs(addresses);
 
         MaterialityConfig mcPreset = new MaterialityConfig();
         java.lang.reflect.Field mcField = MaterialityConfig.class.getDeclaredField("createdAt");

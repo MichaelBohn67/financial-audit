@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -124,6 +125,26 @@ class ReportApiControllerTest {
                                 Map.of("templateName", "AML-Report", "parameters", "tenantId=T1"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
+    }
+
+    @Test
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
+    void shouldMarkRunFailedWhenExportThrows() throws Exception {
+        ReportRun running = reportRun(11L, "AML-Report", "1.0.0", ReportRunStatus.RUNNING);
+        ReportRun failed = reportRun(11L, "AML-Report", "1.0.0", ReportRunStatus.FAILED);
+        failed.setErrorMessage("export failed");
+        when(reportService.startRun(anyString(), anyString(), anyString())).thenReturn(running);
+        doThrow(new IllegalStateException("export failed")).when(reportExportService).assemble(11L);
+        when(reportService.failRun(11L, "export failed")).thenReturn(failed);
+
+        mockMvc.perform(post("/api/reports/runs")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("templateName", "AML-Report", "parameters", ""))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("FAILED"))
+                .andExpect(jsonPath("$.errorMessage").value("export failed"));
     }
 
     @Test

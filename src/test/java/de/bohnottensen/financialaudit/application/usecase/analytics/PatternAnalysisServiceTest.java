@@ -206,6 +206,39 @@ class PatternAnalysisServiceTest {
         verify(findingRepository, times(0)).save(any());
     }
 
+    @Test
+    void shouldDetectRepeatedTransfersExactlyAtTwentyFourHourBoundary() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        FindingRepository findingRepository = mock(FindingRepository.class);
+        PatternAnalysisRunRepository runRepository = mock(PatternAnalysisRunRepository.class);
+        PatternAnalysisIssueRepository issueRepository = mock(PatternAnalysisIssueRepository.class);
+        AuditTrailWriter auditTrailWriter = mock(AuditTrailWriter.class);
+
+        Booking first = booking(1L, 301L, "P1", "75.00", "2026-08-01T10:00:00", "DE111", "DE222");
+        Booking middle = booking(2L, 302L, "P2", "75.00", "2026-08-01T12:00:00", "DE111", "DE222");
+        Booking third = booking(3L, 303L, "P3", "75.00", "2026-08-02T10:00:00", "DE111", "DE222");
+        when(bookingRepository.findAll()).thenReturn(List.of(first, middle, third));
+        when(runRepository.save(any(PatternAnalysisRun.class))).thenAnswer(invocation -> {
+            PatternAnalysisRun run = invocation.getArgument(0);
+            run.setId(88L);
+            return run;
+        });
+        when(issueRepository.save(any(PatternAnalysisIssue.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(findingRepository.save(any(Finding.class))).thenAnswer(invocation -> {
+            Finding finding = invocation.getArgument(0);
+            finding.setId(89L);
+            return finding;
+        });
+
+        PatternAnalysisResult result = new PatternAnalysisService(
+                bookingRepository, findingRepository, runRepository, issueRepository, auditTrailWriter
+        ).run("v1", "exact-boundary");
+
+        assertThat(result.issueCount()).isEqualTo(1);
+        assertThat(result.issues().get(0).issueType()).isEqualTo("REPEATED_TRANSFER_PATTERN");
+        assertThat(result.issues().get(0).primaryBookingId()).isEqualTo(2L);
+    }
+
     private Booking booking(Long id,
                             Long foreignTransactionId,
                             String description,

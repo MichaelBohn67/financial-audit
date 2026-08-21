@@ -171,6 +171,51 @@ class BenfordAnalysisServiceTest {
         verify(auditTrailWriter, times(0)).record(any(), any(), any(), any(), any(), any(), any());
     }
 
+    @Test
+    void shouldCountEveryLeadingDigitIncludingFractionalAmounts() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        FindingRepository findingRepository = mock(FindingRepository.class);
+        BenfordAnalysisRunRepository runRepository = mock(BenfordAnalysisRunRepository.class);
+        BenfordDigitStatRepository statRepository = mock(BenfordDigitStatRepository.class);
+        AuditTrailWriter auditTrailWriter = mock(AuditTrailWriter.class);
+
+        // The fractional values exercise the scan past the decimal point. The
+        // negative value verifies that eligibility and digit extraction remain
+        // separate concerns for callers that use signed ledger values.
+        List<Booking> bookings = new ArrayList<>();
+        bookings.add(booking(1, "one", new BigDecimal("100")));
+        bookings.add(booking(2, "two", new BigDecimal("20")));
+        bookings.add(booking(3, "three", new BigDecimal("3")));
+        bookings.add(booking(4, "four", new BigDecimal("0.4")));
+        bookings.add(booking(5, "five", new BigDecimal("0.05")));
+        bookings.add(booking(6, "six", new BigDecimal("0.006")));
+        bookings.add(booking(7, "seven", new BigDecimal("0.0007")));
+        bookings.add(booking(8, "eight", new BigDecimal("0.00008")));
+        bookings.add(booking(9, "nine", new BigDecimal("0.000009")));
+        bookings.add(booking(10, "negative", new BigDecimal("-80")));
+        when(bookingRepository.findAll()).thenReturn(bookings);
+        when(runRepository.save(any(BenfordAnalysisRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(statRepository.save(any(BenfordDigitStat.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(findingRepository.save(any(Finding.class))).thenAnswer(invocation -> {
+            Finding finding = invocation.getArgument(0);
+            finding.setId(1L);
+            return finding;
+        });
+
+        BenfordAnalysisResult result = new BenfordAnalysisService(
+                bookingRepository, findingRepository, runRepository, statRepository, auditTrailWriter
+        ).run("digits", "boundary");
+
+        assertThat(result.bookingCount()).isEqualTo(9);
+        assertThat(result.digitResults()).extracting(BenfordAnalysisResult.DigitResult::observedRatio)
+                .containsExactly(
+                        new BigDecimal("0.111111"), new BigDecimal("0.111111"), new BigDecimal("0.111111"),
+                        new BigDecimal("0.111111"), new BigDecimal("0.111111"), new BigDecimal("0.111111"),
+                        new BigDecimal("0.111111"), new BigDecimal("0.111111"), new BigDecimal("0.111111")
+                );
+        verify(statRepository, times(9)).save(any(BenfordDigitStat.class));
+    }
+
     private Booking booking(long foreignId, String description, BigDecimal amount) {
         Booking booking = new Booking();
         booking.setForeignTransactionId(foreignId);

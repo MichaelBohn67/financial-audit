@@ -4,7 +4,7 @@ Goal: reach 100% line coverage, mutation coverage, and test strength for all 67 
 
 Baseline from the report before this execution: 98% line coverage (2138/2187), 95% mutation coverage (1049/1110), and 96% test strength (1049/1090). The report listed 41 surviving mutants and 20 mutations without a covering test.
 
-Latest full PIT report after this execution: 99% line coverage (2171/2187), 96% mutation coverage (1064/1110), and 96% test strength (1064/1103). It still contains 38 surviving mutants, so the 100% gate remains open.
+Latest complete PIT report: 99% line coverage (2179/2191), 96% mutation coverage (1069/1111), and 97% test strength (1069/1106). The report still has uncovered lines and surviving/timed-out mutants, so the 100% gate remains open.
 
 ## Completed and verified
 
@@ -42,7 +42,7 @@ Latest full PIT report after this execution: 99% line coverage (2171/2187), 96% 
 - [x] Test no-gap, single-gap, multiple-gap, and boundary-adjacent foreign transaction IDs.
 - [x] Test Open Banking account IDs that are null, short, lowercase, invalid, minimum-valid, and maximum-valid.
 - [x] Create payload pairs differing in each business-key field and assert only identical payloads are duplicates.
-- [ ] Introduce a deterministic digest seam for the SHA-256 fallback and cover the exception branch.
+- [x] Introduce a deterministic digest seam for the SHA-256 fallback and cover the exception branch.
 
 ### 4. Analytics
 

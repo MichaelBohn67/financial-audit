@@ -9,6 +9,7 @@ import de.bohnottensen.financialaudit.infrastructure.persistence.BookingReposito
 import de.bohnottensen.financialaudit.infrastructure.persistence.ImportJobProtocolEntryRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.ImportJobRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -28,16 +29,28 @@ public class ImportOrchestratorService {
     private final BookingRepository bookingRepository;
     private final ImportJobRepository importJobRepository;
     private final ImportJobProtocolEntryRepository protocolEntryRepository;
+    private final DigestFactory digestFactory;
     private final BookingValidator bookingValidator = new BookingValidator();
 
+    @Autowired
     public ImportOrchestratorService(List<TransactionSourcePort> sources,
                                      BookingRepository bookingRepository,
                                      ImportJobRepository importJobRepository,
                                      ImportJobProtocolEntryRepository protocolEntryRepository) {
+        this(sources, bookingRepository, importJobRepository, protocolEntryRepository,
+                () -> MessageDigest.getInstance("SHA-256"));
+    }
+
+    ImportOrchestratorService(List<TransactionSourcePort> sources,
+                              BookingRepository bookingRepository,
+                              ImportJobRepository importJobRepository,
+                              ImportJobProtocolEntryRepository protocolEntryRepository,
+                              DigestFactory digestFactory) {
         this.sources = sources;
         this.bookingRepository = bookingRepository;
         this.importJobRepository = importJobRepository;
         this.protocolEntryRepository = protocolEntryRepository;
+        this.digestFactory = digestFactory;
     }
 
     public ImportJobResult importFrom(Object source) {
@@ -235,7 +248,7 @@ public class ImportOrchestratorService {
 
     private String checksum(List<Booking> bookings) {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            MessageDigest digest = digestFactory.create();
             String content = bookings.stream()
                     .map(booking -> String.join("|",
                             String.valueOf(booking.getForeignTransactionId()),
@@ -251,5 +264,10 @@ public class ImportOrchestratorService {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 not available", e);
         }
+    }
+
+    @FunctionalInterface
+    interface DigestFactory {
+        MessageDigest create() throws NoSuchAlgorithmException;
     }
 }

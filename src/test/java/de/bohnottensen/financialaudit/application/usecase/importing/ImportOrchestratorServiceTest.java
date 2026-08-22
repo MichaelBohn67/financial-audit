@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -470,6 +471,28 @@ class ImportOrchestratorServiceTest {
         assertThat(res1.checksum()).isNotNull().hasSize(64);
         assertThat(res2.checksum()).isNotNull().hasSize(64);
         assertThat(res1.checksum()).isNotEqualTo(res2.checksum());
+    }
+
+    @Test
+    void shouldReportDigestProviderFailureAsIllegalState() {
+        TransactionSourcePort port = new TransactionSourcePort() {
+            @Override public boolean supports(Object source) { return true; }
+            @Override public String sourceType() { return "CSV"; }
+            @Override public List<Booking> importTransactions(Object source) {
+                return List.of(createBooking(1L, "Payment", new BigDecimal("10.00")));
+            }
+        };
+        ImportOrchestratorService service = new ImportOrchestratorService(
+                List.of(port), bookingRepository, importJobRepository, protocolEntryRepository,
+                () -> { throw new NoSuchAlgorithmException("test provider unavailable"); }
+        );
+
+        assertThatThrownBy(() -> service.importFrom("source"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("SHA-256 not available")
+                .hasCauseInstanceOf(NoSuchAlgorithmException.class);
+        verify(importJobRepository, atLeastOnce()).save(any(ImportJob.class));
+        verify(protocolEntryRepository).save(any(ImportJobProtocolEntry.class));
     }
 
     private Booking createBooking(Long foreignId, String description, BigDecimal amount) {

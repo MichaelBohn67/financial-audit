@@ -25,6 +25,29 @@ import static org.mockito.Mockito.*;
 class BenfordAnalysisServiceTest {
 
     @Test
+    void shouldApplyBenfordEligibilityAndDigitRulesAtBoundaries() {
+        BenfordAnalysisService service = new BenfordAnalysisService(
+                mock(BookingRepository.class), mock(FindingRepository.class),
+                mock(BenfordAnalysisRunRepository.class), mock(BenfordDigitStatRepository.class),
+                mock(AuditTrailWriter.class));
+
+        Booking zero = booking(1, "zero", BigDecimal.ZERO);
+        Booking one = booking(2, "one", new BigDecimal("100.00"));
+        Booking fractional = booking(3, "fractional", new BigDecimal("0.00070"));
+        Booking onlyZeros = booking(4, "only zeros", new BigDecimal("0.0000"));
+
+        assertThat(service.isEligibleForBenford(zero)).isFalse();
+        assertThat(service.isEligibleForBenford(onlyZeros)).isFalse();
+        assertThat(service.isEligibleForBenford(one)).isTrue();
+        assertThat(service.isEligibleForBenford(fractional)).isTrue();
+        assertThat(service.leadingDigit(one)).isEqualTo(1);
+        assertThat(service.leadingDigit(fractional)).isEqualTo(7);
+        assertThat(service.leadingDigit(onlyZeros)).isEqualTo(-1);
+        assertThat(service.benfordExpectedRatio(1)).isEqualByComparingTo("0.301030");
+        assertThat(service.benfordExpectedRatio(9)).isEqualByComparingTo("0.045757");
+    }
+
+    @Test
     void shouldPersistBenfordRunAndDigitStats() {
         BookingRepository bookingRepository = mock(BookingRepository.class);
         FindingRepository findingRepository = mock(FindingRepository.class);
@@ -49,8 +72,10 @@ class BenfordAnalysisServiceTest {
         when(bookingRepository.findAll()).thenReturn(bookings);
 
         AtomicLong runIds = new AtomicLong(42L);
+        List<Integer> persistedSuspiciousCounts = new ArrayList<>();
         when(runRepository.save(any(BenfordAnalysisRun.class))).thenAnswer(invocation -> {
             BenfordAnalysisRun run = invocation.getArgument(0);
+            persistedSuspiciousCounts.add(run.getSuspiciousDigitCount());
             if (run.getId() == null) {
                 run.setId(runIds.getAndIncrement());
             }
@@ -111,6 +136,7 @@ class BenfordAnalysisServiceTest {
 
         ArgumentCaptor<BenfordAnalysisRun> runCaptor = ArgumentCaptor.forClass(BenfordAnalysisRun.class);
         verify(runRepository, times(2)).save(runCaptor.capture());
+        assertThat(persistedSuspiciousCounts).containsExactly(0, result.suspiciousDigitCount());
         assertThat(runCaptor.getAllValues().get(1).getSuspiciousDigitCount()).isEqualTo(result.suspiciousDigitCount());
 
         ArgumentCaptor<String> auditPayloadCaptor = ArgumentCaptor.forClass(String.class);

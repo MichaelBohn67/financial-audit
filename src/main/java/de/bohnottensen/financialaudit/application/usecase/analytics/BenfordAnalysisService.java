@@ -106,7 +106,7 @@ public class BenfordAnalysisService {
         );
     }
 
-    private boolean isEligibleForBenford(Booking booking) {
+    boolean isEligibleForBenford(Booking booking) {
         return booking.getAmount() != null
                 && booking.getAmount().compareTo(BigDecimal.ZERO) > 0
                 && leadingDigit(booking) >= 1;
@@ -123,7 +123,7 @@ public class BenfordAnalysisService {
         return counts;
     }
 
-    private int leadingDigit(Booking booking) {
+    int leadingDigit(Booking booking) {
         String normalized = booking.getAmount().abs().stripTrailingZeros().toPlainString().replace(".", "");
         for (int i = 0; i < normalized.length(); i++) {
             char c = normalized.charAt(i);
@@ -134,7 +134,7 @@ public class BenfordAnalysisService {
         return -1;
     }
 
-    private BigDecimal benfordExpectedRatio(int digit) {
+    BigDecimal benfordExpectedRatio(int digit) {
         double value = Math.log10(1d + (1d / digit));
         return BigDecimal.valueOf(value).setScale(6, RoundingMode.HALF_UP);
     }

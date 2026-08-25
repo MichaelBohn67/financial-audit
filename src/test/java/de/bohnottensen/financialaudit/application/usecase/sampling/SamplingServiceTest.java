@@ -19,8 +19,38 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 class SamplingServiceTest {
+
+    @Test
+    void shouldSelectMusBookingWhenCumulativeAmountEqualsSelectionPoint() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
+        SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
+        when(bookingRepository.findAll()).thenReturn(List.of(
+                booking(1L, "0.730969"), booking(2L, "1.269033")));
+        when(runRepository.save(any(SamplingRun.class))).thenAnswer(invocation -> {
+            SamplingRun run = invocation.getArgument(0);
+            run.setId(200L);
+            return run;
+        });
+        List<SamplingRunItem> items = new ArrayList<>();
+        when(runItemRepository.save(any(SamplingRunItem.class))).thenAnswer(invocation -> {
+            SamplingRunItem item = invocation.getArgument(0);
+            items.add(item);
+            return item;
+        });
+
+        SamplingRun run = new SamplingService(bookingRepository, runRepository, runItemRepository)
+                .generateMusSample("exact-selection-point", 2, 2, 0L);
+
+        assertThat(run.getPopulationSize()).isEqualTo(2L);
+        assertThat(items).hasSize(2);
+        assertThat(items.get(0).getBookingId()).isEqualTo(1L);
+        assertThat(items.get(0).getSelectionPoint()).isEqualByComparingTo("0.730969");
+        assertThat(items.get(1).getBookingId()).isEqualTo(2L);
+    }
 
     @Test
     void shouldCreateDeterministicMusSelections() {
@@ -294,6 +324,57 @@ class SamplingServiceTest {
 
         assertThat(run.getPopulationSize()).isEqualTo(2L);
         assertThat(run.getSampleSize()).isEqualTo(2L);
+    }
+
+    @Test
+    void shouldGenerateOneRecordRandomSampleAtMinimumSampleSize() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
+        SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
+        when(bookingRepository.findAll()).thenReturn(List.of(booking(8L, "80.00")));
+        when(runRepository.save(any(SamplingRun.class))).thenAnswer(invocation -> {
+            SamplingRun run = invocation.getArgument(0);
+            run.setId(201L);
+            return run;
+        });
+
+        SamplingService service = new SamplingService(bookingRepository, runRepository, runItemRepository);
+        SamplingRun run = service.generateRandomSample("one-record", 1, 1, 4L);
+
+        assertThat(run.getPopulationSize()).isEqualTo(1L);
+        verify(runItemRepository).save(any(SamplingRunItem.class));
+    }
+
+    @Test
+    void shouldAllocateStratifiedRemainderToLargestRemainingStratumAndSkipEmptyStrata() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
+        SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
+        when(bookingRepository.findAll()).thenReturn(List.of(
+                booking(5L, "500"), booking(1L, "10"), booking(4L, "400"),
+                booking(2L, "20"), booking(3L, "30"), booking(6L, "600")));
+        when(runRepository.save(any(SamplingRun.class))).thenAnswer(invocation -> {
+            SamplingRun run = invocation.getArgument(0);
+            run.setId(202L);
+            return run;
+        });
+        List<SamplingRunItem> items = new ArrayList<>();
+        when(runItemRepository.save(any(SamplingRunItem.class))).thenAnswer(invocation -> {
+            SamplingRunItem item = invocation.getArgument(0);
+            items.add(item);
+            return item;
+        });
+
+        new SamplingService(bookingRepository, runRepository, runItemRepository)
+                .generateStratifiedSample("remainder", 6, 5, 9L, 8);
+
+        assertThat(items).hasSize(5);
+        assertThat(items.stream().map(item -> item.getSelectionPoint().intValue()).distinct())
+                .containsExactlyInAnyOrder(1, 2, 3, 5, 6);
+        assertThat(items).extracting(SamplingRunItem::getBookingId)
+                .containsExactlyInAnyOrder(1L, 2L, 3L, 4L, 5L);
+        assertThat(items).extracting(SamplingRunItem::getSampleUnitIndex)
+                .containsExactly(0, 1, 2, 3, 4);
     }
 
     @Test

@@ -74,6 +74,10 @@ All workpaper workflow transitions, review-action history, finding remediation o
 
 Abgeschlossene Berichte können als serverseitig erzeugtes, deterministisches JSON-Artefakt archiviert werden. Die Archivierung speichert SHA-256, Dateigröße, Scope, Ersteller, Zeitstempel und Manifest; sie ist idempotent und nur für abgeschlossene Läufe zulässig. Das Archivverzeichnis wird über `FINANCIAL_AUDIT_REPORT_ARCHIVE_DIRECTORY` konfiguriert.
 
+### J. Sicherheitsprüfung, Abnahme und Pilot
+
+Der Abnahme- und Pilotprozess ist in `SECURITY_ACCEPTANCE.md` und `PILOT_RUNBOOK.md` dokumentiert. Der aktuelle Gate-Status ist NO-GO, da der vollständige Testlauf noch 36 Failures und 2 Errors meldet. Ein Produktiv-Pilot wurde nicht gegen ein reales Zielsystem ausgeführt.
+
 ## 5. Verification Notes
 
 - `mvn test`: 119 tests passed, 0 failures, 0 errors.

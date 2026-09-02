@@ -21,3 +21,7 @@ databaseChangeLog:
       file: db/changelog/changes/019-audit-plan-remediation-materiality.yaml
   - include:
       file: db/changelog/changes/020-materiality-finding-metadata.yaml
+  - include:
+      file: db/changelog/changes/021-create-tenant-project-scope.yaml
+  - include:
+      file: db/changelog/changes/023-fix-scope-unique-constraints.yaml

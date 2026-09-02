@@ -2,9 +2,27 @@ package de.bohnottensen.financialaudit.infrastructure.security;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import de.bohnottensen.financialaudit.infrastructure.persistence.ProjectMembershipRepository;
 
 @Component("scopeAccessPolicy")
 public class ScopeAccessPolicy {
+
+    private final ProjectMembershipRepository memberships;
+    private final boolean scopeEnforcement;
+
+    public ScopeAccessPolicy() {
+        this.memberships = null;
+        this.scopeEnforcement = false;
+    }
+
+    @Autowired
+    public ScopeAccessPolicy(ProjectMembershipRepository memberships,
+                             @Value("${financial-audit.security.scope-enforcement:true}") boolean scopeEnforcement) {
+        this.memberships = memberships;
+        this.scopeEnforcement = scopeEnforcement;
+    }
 
     public boolean canAccessTenant(Authentication authentication, String tenantId) {
         if (!hasText(tenantId) || authentication == null || !authentication.isAuthenticated()) {
@@ -13,7 +31,9 @@ public class ScopeAccessPolicy {
         if (hasRole(authentication, "ADMIN")) {
             return true;
         }
-        return hasRole(authentication, "LEAD_AUDITOR");
+        return hasRole(authentication, "LEAD_AUDITOR")
+                && (scopeNotEnforced() || memberships.existsByUsernameAndProject_Tenant_TenantKey(
+                authentication.getName(), tenantId));
     }
 
     public boolean canAccessProject(Authentication authentication, String tenantId, String projectId) {
@@ -23,8 +43,9 @@ public class ScopeAccessPolicy {
         if (hasRole(authentication, "ADMIN")) {
             return true;
         }
-        return hasRole(authentication, "LEAD_AUDITOR")
-                || hasRole(authentication, "AUDITOR");
+        return (hasRole(authentication, "LEAD_AUDITOR") || hasRole(authentication, "AUDITOR"))
+                && (scopeNotEnforced() || memberships.existsByUsernameAndProject_Tenant_TenantKeyAndProject_ProjectKey(
+                authentication.getName(), tenantId, projectId));
     }
 
     public boolean canAccessDocument(Authentication authentication, String tenantId, String projectId, String documentId) {
@@ -34,8 +55,13 @@ public class ScopeAccessPolicy {
         if (hasRole(authentication, "ADMIN")) {
             return true;
         }
-        return hasRole(authentication, "LEAD_AUDITOR")
-                || hasRole(authentication, "AUDITOR");
+        return (hasRole(authentication, "LEAD_AUDITOR") || hasRole(authentication, "AUDITOR"))
+                && (scopeNotEnforced() || memberships.existsByUsernameAndProject_Tenant_TenantKeyAndProject_ProjectKey(
+                authentication.getName(), tenantId, projectId));
+    }
+
+    private boolean scopeNotEnforced() {
+        return !scopeEnforcement || memberships == null;
     }
 
     private boolean hasRole(Authentication authentication, String role) {

@@ -29,7 +29,7 @@ public class OpenBankingApiController {
     @GetMapping("/accounts")
     @PreAuthorize("@scopeAccessPolicy.canAccessTenant(authentication, #tenantId)")
     public List<OpenBankingAccountView> accounts(@RequestParam String tenantId) {
-        return accountRepository.findAll().stream()
+        return accountRepository.findByAccountHolder_TenantId(tenantId).stream()
                 .map(this::toAccountView)
                 .toList();
     }
@@ -39,7 +39,7 @@ public class OpenBankingApiController {
     public List<OpenBankingTransactionView> transactions(@RequestParam String tenantId,
                                                          @RequestParam String projectId,
                                                          @RequestParam(required = false) String accountId) {
-        return bookingRepository.findAll().stream()
+        return bookingRepository.findByTenantIdAndProjectId(tenantId, projectId).stream()
                 .filter(booking -> accountId == null
                         || accountId.equals(booking.getSourceAccount())
                         || accountId.equals(booking.getDestinationAccount()))

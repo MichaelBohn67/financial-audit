@@ -15,6 +15,12 @@ public class Booking {
     @Column(unique = true)
     private Long foreignTransactionId;
 
+    @Column(name = "tenant_id", nullable = false, length = 100)
+    private String tenantId;
+
+    @Column(name = "project_id", nullable = false, length = 100)
+    private String projectId;
+
     @Column(nullable = false)
     private String description;
 
@@ -52,6 +58,11 @@ public class Booking {
     public Long getForeignTransactionId() {
         return foreignTransactionId;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String value) { tenantId = value; }
+    public String getProjectId() { return projectId; }
+    public void setProjectId(String value) { projectId = value; }
 
     public void setForeignTransactionId(Long foreignTransactionId) {
         this.foreignTransactionId = foreignTransactionId;

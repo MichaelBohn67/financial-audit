@@ -86,6 +86,8 @@ public class ImportOrchestratorService {
 
         for (int i = 0; i < imported.size(); i++) {
             Booking booking = imported.get(i);
+            booking.setTenantId(runContext.tenantId());
+            booking.setProjectId(runContext.projectId());
             List<String> bookingErrors = bookingValidator.validate(booking);
             int index = i;
             bookingErrors.forEach(error -> errors.add(new ImportValidationError(index, error)));

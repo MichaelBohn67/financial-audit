@@ -37,7 +37,7 @@ public class DomainModelApiController {
     @GetMapping("/bookings")
     @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
     public List<BookingView> bookings(@RequestParam String tenantId, @RequestParam String projectId) {
-        return bookingRepository.findAll().stream()
+        return bookingRepository.findByTenantIdAndProjectId(tenantId, projectId).stream()
                 .map(this::toBookingView)
                 .toList();
     }
@@ -45,7 +45,7 @@ public class DomainModelApiController {
     @GetMapping("/account-holders")
     @PreAuthorize("@scopeAccessPolicy.canAccessTenant(authentication, #tenantId)")
     public List<AccountHolderView> accountHolders(@RequestParam String tenantId) {
-        return accountHolderRepository.findAll().stream()
+        return accountHolderRepository.findByTenantId(tenantId).stream()
                 .map(this::toAccountHolderView)
                 .toList();
     }
@@ -53,7 +53,7 @@ public class DomainModelApiController {
     @GetMapping("/accounts")
     @PreAuthorize("@scopeAccessPolicy.canAccessTenant(authentication, #tenantId)")
     public List<AccountView> accounts(@RequestParam String tenantId) {
-        return accountRepository.findAll().stream()
+        return accountRepository.findByAccountHolder_TenantId(tenantId).stream()
                 .map(this::toAccountView)
                 .toList();
     }
@@ -61,7 +61,7 @@ public class DomainModelApiController {
     @GetMapping("/addresses")
     @PreAuthorize("@scopeAccessPolicy.canAccessTenant(authentication, #tenantId)")
     public List<AddressView> addresses(@RequestParam String tenantId) {
-        return addressRepository.findAll().stream()
+        return addressRepository.findByAccountHolder_TenantId(tenantId).stream()
                 .map(this::toAddressView)
                 .toList();
     }
@@ -71,7 +71,7 @@ public class DomainModelApiController {
     public List<FindingView> findings(@RequestParam String tenantId,
                                       @RequestParam String projectId,
                                       @RequestParam String documentId) {
-        return findingRepository.findAll().stream()
+        return findingRepository.findByBooking_TenantIdAndBooking_ProjectId(tenantId, projectId).stream()
                 .map(this::toFindingView)
                 .toList();
     }

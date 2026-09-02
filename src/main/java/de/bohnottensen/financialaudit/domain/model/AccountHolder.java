@@ -14,6 +14,9 @@ public class AccountHolder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tenant_id", nullable = false, length = 100)
+    private String tenantId;
+
     @Column(nullable = false)
     private String firstName;
 
@@ -49,6 +52,9 @@ public class AccountHolder {
     public Long getId() {
         return id;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String value) { tenantId = value; }
 
     public void setId(Long id) {
         this.id = id;

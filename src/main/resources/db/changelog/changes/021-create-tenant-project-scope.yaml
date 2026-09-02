@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-create-tenant-project-scope
+      author: financial-audit
+      changes:
+        - createTable:
+            tableName: tenants
+            columns:
+              - column: {name: id, type: BIGINT, autoIncrement: true, constraints: {primaryKey: true, nullable: false}}
+              - column: {name: tenant_key, type: VARCHAR(100), constraints: {nullable: false, unique: true}}
+              - column: {name: name, type: VARCHAR(255), constraints: {nullable: false}}
+              - column: {name: created_at, type: DATETIME(6), constraints: {nullable: false}}
+        - createTable:
+            tableName: audit_projects
+            columns:
+              - column: {name: id, type: BIGINT, autoIncrement: true, constraints: {primaryKey: true, nullable: false}}
+              - column: {name: tenant_id, type: BIGINT, constraints: {nullable: false, referencedTableName: tenants, referencedColumnNames: id, foreignKeyName: fk_project_tenant}}
+              - column: {name: project_key, type: VARCHAR(100), constraints: {nullable: false}}
+              - column: {name: name, type: VARCHAR(255), constraints: {nullable: false}}
+              - column: {name: created_at, type: DATETIME(6), constraints: {nullable: false}}
+        - addUniqueConstraint: {tableName: audit_projects, columnNames: tenant_id,project_key, constraintName: uq_project_tenant_key}
+        - createTable:
+            tableName: project_memberships
+            columns:
+              - column: {name: id, type: BIGINT, autoIncrement: true, constraints: {primaryKey: true, nullable: false}}
+              - column: {name: username, type: VARCHAR(255), constraints: {nullable: false}}
+              - column: {name: project_id, type: BIGINT, constraints: {nullable: false, referencedTableName: audit_projects, referencedColumnNames: id, foreignKeyName: fk_membership_project}}
+              - column: {name: assigned_at, type: DATETIME(6), constraints: {nullable: false}}
+        - addUniqueConstraint: {tableName: project_memberships, columnNames: username,project_id, constraintName: uq_project_membership}
+        - addColumn:
+            tableName: bookings
+            columns:
+              - column: {name: tenant_id, type: VARCHAR(100)}
+              - column: {name: project_id, type: VARCHAR(100)}
+        - addColumn:
+            tableName: account_holders
+            columns:
+              - column: {name: tenant_id, type: VARCHAR(100)}
+        - createIndex: {tableName: bookings, indexName: ix_bookings_scope, columns: [{column: {name: tenant_id}}, {column: {name: project_id}}]}
+        - createIndex: {tableName: account_holders, indexName: ix_account_holders_tenant, columns: [{column: {name: tenant_id}}]}

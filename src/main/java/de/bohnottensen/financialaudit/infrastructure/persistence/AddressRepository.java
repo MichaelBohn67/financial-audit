@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AddressRepository extends JpaRepository<Address, Long> {
+    java.util.List<Address> findByAccountHolder_TenantId(String tenantId);
 }

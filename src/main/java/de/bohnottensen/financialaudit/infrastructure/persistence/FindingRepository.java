@@ -9,6 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface FindingRepository extends JpaRepository<Finding, Long> {
+    List<Finding> findByBooking_TenantIdAndBooking_ProjectId(String tenantId, String projectId);
     List<Finding> findByWorkpaperId(Long workpaperId);
     Optional<Finding> findFirstByBookingIdAndMaterialityConfigIdAndRuleName(
             Long bookingId, Long materialityConfigId, String ruleName);

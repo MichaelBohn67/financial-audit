@@ -25,7 +25,7 @@ public class BookingWebController {
     public String listBookings(Model model,
                                @RequestParam String tenantId,
                                @RequestParam String projectId) {
-        model.addAttribute("bookings", bookingRepository.findAll());
+        model.addAttribute("bookings", bookingRepository.findByTenantIdAndProjectId(tenantId, projectId));
         return "booking-list";
     }
 
@@ -48,6 +48,8 @@ public class BookingWebController {
         if (booking.getTransactionTimestamp() == null) {
             booking.setTransactionTimestamp(java.time.LocalDateTime.now());
         }
+        booking.setTenantId(tenantId);
+        booking.setProjectId(projectId);
         Booking savedBooking = bookingRepository.save(booking);
         auditTrailWriter.record(
                 "BOOKING",
@@ -68,10 +70,12 @@ public class BookingWebController {
                                 @RequestParam String tenantId,
                                 @RequestParam String projectId,
                                 @RequestParam String documentId) {
-        Booking previous = bookingRepository.findById(id)
+        Booking previous = bookingRepository.findByIdAndTenantIdAndProjectId(id, tenantId, projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid booking Id:" + id));
         String previousValue = bookingSnapshot(previous);
         booking.setId(id);
+        booking.setTenantId(tenantId);
+        booking.setProjectId(projectId);
         if (booking.getTransactionTimestamp() == null) {
             booking.setTransactionTimestamp(java.time.LocalDateTime.now());
         }
@@ -95,7 +99,7 @@ public class BookingWebController {
                                @RequestParam String tenantId,
                                @RequestParam String projectId,
                                @RequestParam String documentId) {
-        Booking booking = bookingRepository.findById(id)
+        Booking booking = bookingRepository.findByIdAndTenantIdAndProjectId(id, tenantId, projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid booking Id:" + id));
         model.addAttribute("booking", booking);
         return "booking-form";

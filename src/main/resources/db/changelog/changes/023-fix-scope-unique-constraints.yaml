@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 023-fix-scope-unique-constraints
+      author: financial-audit
+      changes:
+        - dropUniqueConstraint:
+            tableName: audit_projects
+            constraintName: uq_project_tenant_key
+        - addUniqueConstraint:
+            tableName: audit_projects
+            columnNames: tenant_id, project_key
+            constraintName: uq_project_tenant_key
+        - dropUniqueConstraint:
+            tableName: project_memberships
+            constraintName: uq_project_membership
+        - addUniqueConstraint:
+            tableName: project_memberships
+            columnNames: username, project_id
+            constraintName: uq_project_membership

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -38,19 +39,22 @@ public class SamplingApiController {
     }
 
     @PostMapping("/mus")
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #request.tenantId(), #request.projectId())")
     public SamplingRun createMus(@Valid @RequestBody MusRequest request) {
         return samplingService.generateMusSample(request.runName(), request.populationSize(),
-                request.sampleSize(), request.seed());
+                request.sampleSize(), request.seed(), request.tenantId(), request.projectId());
     }
 
     @GetMapping("/runs")
-    public List<SamplingRun> runs() {
-        return samplingRuns.findAll();
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
+    public List<SamplingRun> runs(@RequestParam String tenantId, @RequestParam String projectId) {
+        return samplingRuns.findByTenantIdAndProjectIdOrderByCreatedAtDesc(tenantId, projectId);
     }
 
     @GetMapping("/runs/{id}/items")
-    public List<SamplingRunItem> items(@PathVariable Long id) {
-        if (!samplingRuns.existsById(id)) {
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
+    public List<SamplingRunItem> items(@PathVariable Long id, @RequestParam String tenantId, @RequestParam String projectId) {
+        if (samplingRuns.findByIdAndTenantIdAndProjectId(id, tenantId, projectId).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sampling run not found");
         }
         return samplingItems.findBySamplingRunIdOrderBySampleUnitIndex(id);
@@ -62,7 +66,8 @@ public class SamplingApiController {
     }
 
     public record MusRequest(@NotBlank String runName, @Positive long populationSize,
-                             @Positive long sampleSize, long seed) {
+                             @Positive long sampleSize, long seed, @NotBlank String tenantId,
+                             @NotBlank String projectId) {
     }
 
     public record ErrorResponse(String message) {

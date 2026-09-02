@@ -27,6 +27,12 @@ public class AuditEvent {
     @Column(name = "entity_id", nullable = false)
     private Long entityId;
 
+    @Column(name = "tenant_id", length = 100)
+    private String tenantId;
+
+    @Column(name = "project_id", length = 100)
+    private String projectId;
+
     @Column(name = "previous_hash", length = 64, updatable = false)
     private String previousHash;
 
@@ -82,6 +88,11 @@ public class AuditEvent {
     public void setEntityId(Long entityId) {
         this.entityId = entityId;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public String getProjectId() { return projectId; }
+    public void setProjectId(String projectId) { this.projectId = projectId; }
 
     public String getEventType() {
         return eventType;

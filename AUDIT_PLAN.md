@@ -62,6 +62,10 @@ Dashboard metrics, repository queries, typed DTOs, visualizations, page/API role
 
 MUS hardening is implemented. Samples larger than the effective positive-booking population are rejected. Multiple selection points for one high-value booking remain explicitly allowed and are recorded in run metadata as `ALLOW_MULTIPLE_POINTS_PER_BOOKING`. The MUS API (`/api/sampling/mus`), run/item endpoints, protected UI (`/sampling`), request validation, deterministic/edge-case tests, and automatic `SamplingRun` creation audit events are implemented.
 
+### G. Scope-safe reporting, dashboard, and sampling
+
+Report runs, sampling runs, report exports, dashboard metrics, and recent audit-event views now carry and enforce a tenant/project scope. Their repository queries are scope-filtered, and run/item lookup uses the combined scope key to prevent cross-project IDOR access. Existing records are assigned the explicit `LEGACY` migration scope and must be migrated before production use.
+
 ## 5. Verification Notes
 
 - `mvn test`: 119 tests passed, 0 failures, 0 errors.

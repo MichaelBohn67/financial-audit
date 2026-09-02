@@ -37,11 +37,16 @@ public class SamplingService {
     }
 
     public SamplingRun generateMusSample(String runName, long populationSize, long sampleSize, long seed) {
+        return generateMusSample(runName, populationSize, sampleSize, seed, null, null);
+    }
+
+    public SamplingRun generateMusSample(String runName, long populationSize, long sampleSize, long seed,
+                                          String tenantId, String projectId) {
         if (sampleSize <= 0) {
             throw new IllegalArgumentException("sampleSize must be > 0");
         }
 
-        List<Booking> population = bookingRepository.findAll().stream()
+        List<Booking> population = loadPopulation(tenantId, projectId).stream()
                 .filter(booking -> booking.getId() != null)
                 .filter(booking -> booking.getAmount() != null && booking.getAmount().compareTo(ZERO) > 0)
                 .sorted((left, right) -> Long.compare(left.getId(), right.getId()))
@@ -72,6 +77,8 @@ public class SamplingService {
         run.setSeed(seed);
         run.setPopulationSize((long) population.size());
         run.setSampleSize(sampleSize);
+        run.setTenantId(requiredScope(tenantId));
+        run.setProjectId(requiredScope(projectId));
         run.setParametersJson("{\"method\":\"MUS\",\"requestedPopulationSize\":" + populationSize
                 + ",\"effectivePopulationSize\":" + population.size()
                 + ",\"sampleSize\":" + sampleSize
@@ -112,11 +119,16 @@ public class SamplingService {
     }
 
     public SamplingRun generateRandomSample(String runName, long populationSize, long sampleSize, long seed) {
+        return generateRandomSample(runName, populationSize, sampleSize, seed, null, null);
+    }
+
+    public SamplingRun generateRandomSample(String runName, long populationSize, long sampleSize, long seed,
+                                             String tenantId, String projectId) {
         if (sampleSize <= 0) {
             throw new IllegalArgumentException("sampleSize must be > 0");
         }
 
-        List<Booking> population = loadSamplingPopulation();
+        List<Booking> population = loadSamplingPopulation(tenantId, projectId);
         if (sampleSize > population.size()) {
             throw new IllegalArgumentException("sampleSize must be <= effective population size");
         }
@@ -136,6 +148,7 @@ public class SamplingService {
                 seed,
                 population.size(),
                 sampleSize,
+                tenantId, projectId,
                 "{\"method\":\"RANDOM\",\"requestedPopulationSize\":" + populationSize
                         + ",\"effectivePopulationSize\":" + population.size()
                         + ",\"sampleSize\":" + sampleSize
@@ -163,6 +176,12 @@ public class SamplingService {
                                                 long sampleSize,
                                                 long seed,
                                                 int stratumCount) {
+        return generateStratifiedSample(runName, populationSize, sampleSize, seed, stratumCount, null, null);
+    }
+
+    public SamplingRun generateStratifiedSample(String runName,
+                                                long populationSize, long sampleSize, long seed, int stratumCount,
+                                                String tenantId, String projectId) {
         if (sampleSize <= 0) {
             throw new IllegalArgumentException("sampleSize must be > 0");
         }
@@ -170,7 +189,7 @@ public class SamplingService {
             throw new IllegalArgumentException("stratumCount must be > 0");
         }
 
-        List<Booking> population = loadSamplingPopulation();
+        List<Booking> population = loadSamplingPopulation(tenantId, projectId);
         if (sampleSize > population.size()) {
             throw new IllegalArgumentException("sampleSize must be <= effective population size");
         }
@@ -220,6 +239,7 @@ public class SamplingService {
                 seed,
                 population.size(),
                 sampleSize,
+                tenantId, projectId,
                 "{\"method\":\"STRATIFIED\",\"requestedPopulationSize\":" + populationSize
                         + ",\"effectivePopulationSize\":" + population.size()
                         + ",\"sampleSize\":" + sampleSize
@@ -262,12 +282,19 @@ public class SamplingService {
         return savedRun;
     }
 
-    private List<Booking> loadSamplingPopulation() {
-        return bookingRepository.findAll().stream()
+    private List<Booking> loadSamplingPopulation(String tenantId, String projectId) {
+        return loadPopulation(tenantId, projectId).stream()
                 .filter(booking -> booking.getId() != null)
                 .filter(booking -> booking.getAmount() != null && booking.getAmount().compareTo(ZERO) > 0)
                 .sorted((left, right) -> Long.compare(left.getId(), right.getId()))
                 .collect(Collectors.toList());
+    }
+
+    private List<Booking> loadPopulation(String tenantId, String projectId) {
+        if (tenantId == null || projectId == null) {
+            return bookingRepository.findAll();
+        }
+        return bookingRepository.findByTenantIdAndProjectId(tenantId, projectId);
     }
 
     private SamplingRun saveRun(String runName,
@@ -275,6 +302,8 @@ public class SamplingService {
                                 long seed,
                                 long effectivePopulationSize,
                                 long sampleSize,
+                                String tenantId,
+                                String projectId,
                                 String parametersJson) {
         SamplingRun run = new SamplingRun();
         run.setRunName(runName);
@@ -282,7 +311,13 @@ public class SamplingService {
         run.setSeed(seed);
         run.setPopulationSize(effectivePopulationSize);
         run.setSampleSize(sampleSize);
+        run.setTenantId(requiredScope(tenantId));
+        run.setProjectId(requiredScope(projectId));
         run.setParametersJson(parametersJson);
         return samplingRunRepository.save(run);
+    }
+
+    private String requiredScope(String value) {
+        return value == null ? "LEGACY" : value;
     }
 }

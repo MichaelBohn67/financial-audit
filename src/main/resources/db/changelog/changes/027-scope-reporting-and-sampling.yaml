@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 027-scope-reporting-and-sampling
+      author: financial-audit
+      changes:
+        - addColumn:
+            tableName: report_runs
+            columns:
+              - column: { name: tenant_id, type: varchar(100), defaultValue: LEGACY, constraints: { nullable: false } }
+              - column: { name: project_id, type: varchar(100), defaultValue: LEGACY, constraints: { nullable: false } }
+        - addColumn:
+            tableName: sampling_runs
+            columns:
+              - column: { name: tenant_id, type: varchar(100), defaultValue: LEGACY, constraints: { nullable: false } }
+              - column: { name: project_id, type: varchar(100), defaultValue: LEGACY, constraints: { nullable: false } }

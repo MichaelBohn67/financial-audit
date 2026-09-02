@@ -31,3 +31,7 @@ databaseChangeLog:
       file: db/changelog/changes/025-audit-trail-integrity.yaml
   - include:
       file: db/changelog/changes/026-workpaper-scope.yaml
+  - include:
+      file: db/changelog/changes/027-scope-reporting-and-sampling.yaml
+  - include:
+      file: db/changelog/changes/028-scope-audit-events.yaml

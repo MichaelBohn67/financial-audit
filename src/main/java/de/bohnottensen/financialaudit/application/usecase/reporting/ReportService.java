@@ -62,11 +62,18 @@ public class ReportService {
      * The run is created in RUNNING status and persisted immediately for traceability.
      */
     public ReportRun startRun(String templateName, String triggeredBy, String parameters) {
+        return startRun(templateName, triggeredBy, parameters, "LEGACY", "LEGACY");
+    }
+
+    public ReportRun startRun(String templateName, String triggeredBy, String parameters,
+                              String tenantId, String projectId) {
         ReportTemplate template = findActiveTemplate(templateName);
         ReportRun run = new ReportRun();
         run.setReportName(templateName);
         run.setTemplateVersion(template.getVersion());
         run.setTemplateId(template.getId());
+        run.setTenantId(tenantId);
+        run.setProjectId(projectId);
         run.setTriggeredBy(triggeredBy);
         run.setParameters(parameters);
         run.setStatus(ReportRunStatus.RUNNING.name());
@@ -99,8 +106,16 @@ public class ReportService {
         return reportRunRepository.findById(runId).orElseThrow();
     }
 
+    public ReportRun findRunById(Long runId, String tenantId, String projectId) {
+        return reportRunRepository.findByIdAndTenantIdAndProjectId(runId, tenantId, projectId).orElseThrow();
+    }
+
     public List<ReportRun> findRunsByStatus(ReportRunStatus status) {
         return reportRunRepository.findByStatusOrderByGeneratedAtDesc(status.name());
+    }
+
+    public List<ReportRun> findRunsByStatus(ReportRunStatus status, String tenantId, String projectId) {
+        return reportRunRepository.findByTenantIdAndProjectIdAndStatusOrderByGeneratedAtDesc(tenantId, projectId, status.name());
     }
 
     public List<ReportRun> findRunsByTemplate(String templateName, String templateVersion) {
@@ -118,5 +133,21 @@ public class ReportService {
         reportRun.setStatus(status);
         reportRun.setOutputPath(outputPath);
         return reportRunRepository.save(reportRun);
+    }
+
+    public ReportRun completeRun(Long runId, String outputPath, String tenantId, String projectId) {
+        ReportRun run = findRunById(runId, tenantId, projectId);
+        run.setStatus(ReportRunStatus.COMPLETED.name());
+        run.setOutputPath(outputPath);
+        run.setCompletedAt(LocalDateTime.now());
+        return reportRunRepository.save(run);
+    }
+
+    public ReportRun failRun(Long runId, String errorMessage, String tenantId, String projectId) {
+        ReportRun run = findRunById(runId, tenantId, projectId);
+        run.setStatus(ReportRunStatus.FAILED.name());
+        run.setErrorMessage(errorMessage);
+        run.setCompletedAt(LocalDateTime.now());
+        return reportRunRepository.save(run);
     }
 }

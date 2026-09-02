@@ -60,6 +60,16 @@ public class ReportExportService {
         );
     }
 
+    public ReportContent assemble(Long runId, String tenantId, String projectId) {
+        ReportRun run = reportService.findRunById(runId, tenantId, projectId);
+        List<Finding> findings = findingRepository.findByBooking_TenantIdAndBooking_ProjectId(tenantId, projectId);
+        List<Booking> bookings = bookingRepository.findByTenantIdAndProjectId(tenantId, projectId);
+        List<SamplingRun> samplingRuns = samplingRunRepository.findByTenantIdAndProjectIdOrderByCreatedAtDesc(tenantId, projectId);
+        return new ReportContent(run.getReportName(), run.getTemplateVersion(), run.getGeneratedAt(), run.getTriggeredBy(),
+                run.getParameters(), buildFindingsSummary(findings), buildBookingStats(bookings, findings),
+                buildSamplingRunSummaries(samplingRuns));
+    }
+
     private ReportContent.FindingsSummary buildFindingsSummary(List<Finding> findings) {
         long total = findings.size();
         long high = findings.stream().filter(f -> "HIGH".equalsIgnoreCase(f.getRiskLevel())).count();

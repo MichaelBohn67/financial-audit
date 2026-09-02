@@ -28,6 +28,12 @@ public class ReportRun {
     @Column(name = "template_id")
     private Long templateId;
 
+    @Column(name = "tenant_id", nullable = false, length = 100)
+    private String tenantId;
+
+    @Column(name = "project_id", nullable = false, length = 100)
+    private String projectId;
+
     @Column(nullable = false, length = 50)
     private String status;
 
@@ -58,6 +64,8 @@ public class ReportRun {
         if (status == null) {
             status = ReportRunStatus.PENDING.name();
         }
+        if (tenantId == null) tenantId = "LEGACY";
+        if (projectId == null) projectId = "LEGACY";
     }
 
     public Long getId() {
@@ -91,6 +99,11 @@ public class ReportRun {
     public void setTemplateId(Long templateId) {
         this.templateId = templateId;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public String getProjectId() { return projectId; }
+    public void setProjectId(String projectId) { this.projectId = projectId; }
 
     public String getStatus() {
         return status;

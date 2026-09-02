@@ -62,35 +62,35 @@ public class ReportApiController {
      * is assembled and the run is completed synchronously.
      */
     @PostMapping("/runs")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #request.tenantId(), #request.projectId())")
     public ResponseEntity<ReportRunView> startRun(
             @RequestBody StartRunRequest request,
             @AuthenticationPrincipal UserDetails user) {
         ReportRun run = reportService.startRun(
-                request.templateName(), user.getUsername(), request.parameters());
+                request.templateName(), user.getUsername(), request.parameters(), request.tenantId(), request.projectId());
         try {
             // Assemble and complete synchronously; outputPath records the run ID as reference
-            reportExportService.assemble(run.getId());
-            run = reportService.completeRun(run.getId(), "run:" + run.getId());
+            reportExportService.assemble(run.getId(), request.tenantId(), request.projectId());
+            run = reportService.completeRun(run.getId(), "run:" + run.getId(), request.tenantId(), request.projectId());
         } catch (Exception e) {
-            run = reportService.failRun(run.getId(), e.getMessage());
+            run = reportService.failRun(run.getId(), e.getMessage(), request.tenantId(), request.projectId());
         }
         return ResponseEntity.ok(toRunView(run));
     }
 
     /** Get run metadata by ID. */
     @GetMapping("/runs/{id}")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
-    public ResponseEntity<ReportRunView> getRun(@PathVariable Long id) {
-        return ResponseEntity.ok(toRunView(reportService.findRunById(id)));
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
+    public ResponseEntity<ReportRunView> getRun(@PathVariable Long id, @RequestParam String tenantId, @RequestParam String projectId) {
+        return ResponseEntity.ok(toRunView(reportService.findRunById(id, tenantId, projectId)));
     }
 
     /** List runs filtered by status. */
     @GetMapping("/runs")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
     public ResponseEntity<List<ReportRunView>> listRuns(
-            @RequestParam(defaultValue = "COMPLETED") String status) {
-        List<ReportRun> runs = reportService.findRunsByStatus(ReportRunStatus.valueOf(status));
+            @RequestParam(defaultValue = "COMPLETED") String status, @RequestParam String tenantId, @RequestParam String projectId) {
+        List<ReportRun> runs = reportService.findRunsByStatus(ReportRunStatus.valueOf(status), tenantId, projectId);
         return ResponseEntity.ok(runs.stream().map(this::toRunView).toList());
     }
 
@@ -99,9 +99,9 @@ public class ReportApiController {
      * Returns the assembled {@link ReportContent} as a JSON artefact.
      */
     @GetMapping("/runs/{id}/export")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
-    public ResponseEntity<ReportContent> exportRun(@PathVariable Long id) {
-        ReportContent content = reportExportService.assemble(id);
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
+    public ResponseEntity<ReportContent> exportRun(@PathVariable Long id, @RequestParam String tenantId, @RequestParam String projectId) {
+        ReportContent content = reportExportService.assemble(id, tenantId, projectId);
         return ResponseEntity.ok(content);
     }
 
@@ -122,7 +122,7 @@ public class ReportApiController {
 
     public record RegisterTemplateRequest(String name, String version, String description) {}
 
-    public record StartRunRequest(String templateName, String parameters) {}
+    public record StartRunRequest(String templateName, String parameters, String tenantId, String projectId) {}
 
     public record ReportTemplateView(Long id, String name, String version, String description,
                                      boolean active, LocalDateTime createdAt) {}

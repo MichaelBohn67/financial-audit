@@ -8,5 +8,6 @@ import java.util.Optional;
 
 public interface AuditEventRepository extends JpaRepository<AuditEvent, Long> {
     List<AuditEvent> findTop10ByOrderByMetadata_OccurredAtDesc();
+    List<AuditEvent> findTop10ByTenantIdAndProjectIdOrderByMetadata_OccurredAtDesc(String tenantId, String projectId);
     Optional<AuditEvent> findTopByOrderByMetadata_OccurredAtDesc();
 }

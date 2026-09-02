@@ -63,20 +63,53 @@ public class DashboardService {
         );
     }
 
+    public Metrics metrics(String tenantId, String projectId) {
+        long totalWorkpapers = workpapers.countByTenantIdAndScopeProjectId(tenantId, projectId);
+        long signedOffWorkpapers = workpapers.countByTenantIdAndScopeProjectIdAndStatus(tenantId, projectId, "SIGNED_OFF");
+        return new Metrics(
+                bookings.findByTenantIdAndProjectId(tenantId, projectId).size(),
+                findings.countByBooking_TenantIdAndBooking_ProjectId(tenantId, projectId),
+                countsByRisk(tenantId, projectId), countsByFindingStatus(tenantId, projectId),
+                countsByRemediationStatus(tenantId, projectId),
+                findings.countByBooking_TenantIdAndBooking_ProjectIdAndRemediationStatusIn(tenantId, projectId, List.of("OPEN", "IN_PROGRESS", "READY_FOR_REVIEW", "REJECTED")),
+                findings.countByBooking_TenantIdAndBooking_ProjectIdAndRemediationDueDateBeforeAndRemediationStatusNot(tenantId, projectId, LocalDate.now(), "CLOSED"),
+                countsByWorkpaperStatus(tenantId, projectId),
+                samplingRuns.findByTenantIdAndProjectIdOrderByCreatedAtDesc(tenantId, projectId).size(),
+                new AuditProgress(totalWorkpapers, signedOffWorkpapers, percentage(signedOffWorkpapers, totalWorkpapers)),
+                reportRuns.findTop5ByTenantIdAndProjectIdOrderByGeneratedAtDesc(tenantId, projectId).stream().map(this::report).toList(),
+                auditEvents.findTop10ByTenantIdAndProjectIdOrderByMetadata_OccurredAtDesc(tenantId, projectId).stream().map(this::auditEvent).toList());
+    }
+
     private Map<String, Long> countsByRisk() {
         return counts(RISK_LEVELS, findings::countByRiskLevel);
+    }
+
+    private Map<String, Long> countsByRisk(String tenantId, String projectId) {
+        return counts(RISK_LEVELS, key -> findings.countByBooking_TenantIdAndBooking_ProjectIdAndRiskLevel(tenantId, projectId, key));
     }
 
     private Map<String, Long> countsByFindingStatus() {
         return counts(FINDING_STATUSES, findings::countByStatus);
     }
 
+    private Map<String, Long> countsByFindingStatus(String tenantId, String projectId) {
+        return counts(FINDING_STATUSES, key -> findings.countByBooking_TenantIdAndBooking_ProjectIdAndStatus(tenantId, projectId, key));
+    }
+
     private Map<String, Long> countsByRemediationStatus() {
         return counts(REMEDIATION_STATUSES, findings::countByRemediationStatus);
     }
 
+    private Map<String, Long> countsByRemediationStatus(String tenantId, String projectId) {
+        return counts(REMEDIATION_STATUSES, key -> findings.countByBooking_TenantIdAndBooking_ProjectIdAndRemediationStatus(tenantId, projectId, key));
+    }
+
     private Map<String, Long> countsByWorkpaperStatus() {
         return counts(WORKPAPER_STATUSES, workpapers::countByStatus);
+    }
+
+    private Map<String, Long> countsByWorkpaperStatus(String tenantId, String projectId) {
+        return counts(WORKPAPER_STATUSES, key -> workpapers.countByTenantIdAndScopeProjectIdAndStatus(tenantId, projectId, key));
     }
 
     private Map<String, Long> counts(List<String> keys, java.util.function.Function<String, Long> counter) {

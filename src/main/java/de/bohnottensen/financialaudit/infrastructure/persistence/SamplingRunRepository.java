@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SamplingRunRepository extends JpaRepository<SamplingRun, Long> {
+    java.util.List<SamplingRun> findByTenantIdAndProjectIdOrderByCreatedAtDesc(String tenantId, String projectId);
+    java.util.Optional<SamplingRun> findByIdAndTenantIdAndProjectId(Long id, String tenantId, String projectId);
 }

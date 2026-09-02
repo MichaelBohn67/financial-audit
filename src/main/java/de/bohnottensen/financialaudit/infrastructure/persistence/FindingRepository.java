@@ -10,6 +10,12 @@ import java.util.Optional;
 @Repository
 public interface FindingRepository extends JpaRepository<Finding, Long> {
     List<Finding> findByBooking_TenantIdAndBooking_ProjectId(String tenantId, String projectId);
+    long countByBooking_TenantIdAndBooking_ProjectId(String tenantId, String projectId);
+    long countByBooking_TenantIdAndBooking_ProjectIdAndRiskLevel(String tenantId, String projectId, String riskLevel);
+    long countByBooking_TenantIdAndBooking_ProjectIdAndStatus(String tenantId, String projectId, String status);
+    long countByBooking_TenantIdAndBooking_ProjectIdAndRemediationStatus(String tenantId, String projectId, String status);
+    long countByBooking_TenantIdAndBooking_ProjectIdAndRemediationStatusIn(String tenantId, String projectId, List<String> statuses);
+    long countByBooking_TenantIdAndBooking_ProjectIdAndRemediationDueDateBeforeAndRemediationStatusNot(String tenantId, String projectId, LocalDate date, String status);
     List<Finding> findByWorkpaperId(Long workpaperId);
     Optional<Finding> findFirstByBookingIdAndMaterialityConfigIdAndRuleName(
             Long bookingId, Long materialityConfigId, String ruleName);

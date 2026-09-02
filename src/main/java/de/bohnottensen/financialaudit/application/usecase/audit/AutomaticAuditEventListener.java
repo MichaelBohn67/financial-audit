@@ -73,6 +73,7 @@ public class AutomaticAuditEventListener implements PostInsertEventListener, Pos
         AuditEvent event = new AuditEvent();
         event.setEntityType(entity.getClass().getSimpleName());
         event.setEntityId(((Number) id).longValue());
+        setScope(event, entity);
         event.setEventType("PERSISTENCE_" + operation);
         event.setActor(actor());
         event.setSummary("Automatic persistence audit event");
@@ -89,6 +90,29 @@ public class AutomaticAuditEventListener implements PostInsertEventListener, Pos
         event.setSourceIp(org.slf4j.MDC.get("sourceIp"));
         event.setIntegrityHash(hash(event, previousHash));
         session.persist(event);
+    }
+
+    private void setScope(AuditEvent event, Object entity) {
+        String tenant = invokeString(entity, "getTenantId");
+        String project = invokeString(entity, "getProjectId");
+        if (project == null) project = invokeString(entity, "getScopeProjectId");
+        if (tenant == null && entity instanceof de.bohnottensen.financialaudit.domain.model.Finding finding
+                && finding.getBooking() != null) {
+            tenant = finding.getBooking().getTenantId();
+            project = finding.getBooking().getProjectId();
+        }
+        event.setTenantId(tenant);
+        event.setProjectId(project);
+    }
+
+    private String invokeString(Object entity, String methodName) {
+        try {
+            Method method = entity.getClass().getMethod(methodName);
+            Object value = method.invoke(entity);
+            return value instanceof String string && !string.isBlank() ? string : null;
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
     }
 
     private String hash(AuditEvent event, String previousHash) {

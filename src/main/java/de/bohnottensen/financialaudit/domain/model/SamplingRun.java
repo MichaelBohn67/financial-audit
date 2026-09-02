@@ -32,6 +32,12 @@ public class SamplingRun {
     @Column(name = "sample_size")
     private Long sampleSize;
 
+    @Column(name = "tenant_id", nullable = false, length = 100)
+    private String tenantId;
+
+    @Column(name = "project_id", nullable = false, length = 100)
+    private String projectId;
+
     @Column(name = "parameters_json", length = 4000)
     private String parametersJson;
 
@@ -43,6 +49,8 @@ public class SamplingRun {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+        if (tenantId == null) tenantId = "LEGACY";
+        if (projectId == null) projectId = "LEGACY";
     }
 
     public Long getId() {
@@ -92,6 +100,11 @@ public class SamplingRun {
     public void setSampleSize(Long sampleSize) {
         this.sampleSize = sampleSize;
     }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public String getProjectId() { return projectId; }
+    public void setProjectId(String projectId) { this.projectId = projectId; }
 
     public String getParametersJson() {
         return parametersJson;

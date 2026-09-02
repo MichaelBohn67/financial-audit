@@ -27,7 +27,7 @@ public class SecurityConfig {
                         .requestMatchers("/dashboard").authenticated()
                         .requestMatchers("/sampling").authenticated()
                         .requestMatchers("/api/**", "/open-banking/**").authenticated()
-                        .requestMatchers("/", "/error", "/login", "/css/**", "/js/**", "/images/**", "/actuator/health").permitAll()
+                        .requestMatchers("/", "/error", "/login", "/css/**", "/js/**", "/images/**", "/actuator/health", "/actuator/health/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(httpBasic -> {})

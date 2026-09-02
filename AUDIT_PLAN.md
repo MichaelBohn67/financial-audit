@@ -66,6 +66,10 @@ MUS hardening is implemented. Samples larger than the effective positive-booking
 
 Report runs, sampling runs, report exports, dashboard metrics, and recent audit-event views now carry and enforce a tenant/project scope. Their repository queries are scope-filtered, and run/item lookup uses the combined scope key to prevent cross-project IDOR access. Existing records are assigned the explicit `LEGACY` migration scope and must be migrated before production use.
 
+### H. Scope-safe workpaper and finding operations
+
+All workpaper workflow transitions, review-action history, finding remediation operations, and finding-to-workpaper links now require and validate the tenant/project scope. A workpaper can only be linked to a finding from the same scope.
+
 ## 5. Verification Notes
 
 - `mvn test`: 119 tests passed, 0 failures, 0 errors.

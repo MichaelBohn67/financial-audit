@@ -35,6 +35,16 @@ public class FindingManagementService {
         return findings.findById(id).orElseThrow();
     }
 
+    public Finding get(Long id, String tenantId, String projectId) {
+        Finding finding = get(id);
+        if (finding.getBooking() == null || tenantId == null || projectId == null
+                || !tenantId.equals(finding.getBooking().getTenantId())
+                || !projectId.equals(finding.getBooking().getProjectId())) {
+            throw new java.util.NoSuchElementException("Finding not found in requested scope");
+        }
+        return finding;
+    }
+
     @Transactional
     public Finding linkWorkpaper(Long id, Long workpaperId, String actor) {
         requireActor(actor);
@@ -47,6 +57,44 @@ public class FindingManagementService {
         String previous = snapshot(finding);
         finding.setWorkpaper(workpaper);
         return change(finding, actor, "LINK_WORKPAPER", previous);
+    }
+
+    @Transactional
+    public Finding linkWorkpaper(Long id, Long workpaperId, String tenantId, String projectId, String actor) {
+        requireActor(actor);
+        Finding finding = get(id, tenantId, projectId); ensureMutable(finding);
+        Workpaper workpaper = workpapers.findByIdAndTenantIdAndScopeProjectId(workpaperId, tenantId, projectId).orElseThrow();
+        String previous = snapshot(finding); finding.setWorkpaper(workpaper);
+        return change(finding, actor, "LINK_WORKPAPER", previous);
+    }
+
+    @Transactional
+    public Finding assign(Long id, String owner, LocalDate dueDate, String tenantId, String projectId, String actor) {
+        requireActor(actor);
+        if (owner == null || owner.isBlank() || dueDate == null) throw new IllegalArgumentException("Remediation owner and due date are required");
+        Finding finding = get(id, tenantId, projectId); ensureMutable(finding); String previous = snapshot(finding);
+        finding.setRemediationOwner(owner.trim()); finding.setRemediationDueDate(dueDate);
+        return change(finding, actor, "ASSIGN_REMEDIATION", previous);
+    }
+
+    @Transactional
+    public Finding updatePlan(Long id, String plan, String tenantId, String projectId, String actor) {
+        requireActor(actor); if (plan == null || plan.isBlank()) throw new IllegalArgumentException("Remediation plan is required");
+        Finding finding = get(id, tenantId, projectId); ensureMutable(finding); String previous = snapshot(finding);
+        finding.setRemediationPlan(plan.trim()); return change(finding, actor, "UPDATE_REMEDIATION_PLAN", previous);
+    }
+
+    @Transactional
+    public Finding transition(Long id, String target, String comment, String tenantId, String projectId, String actor) {
+        Finding finding = get(id, tenantId, projectId); requireActor(actor);
+        String normalizedTarget = target == null ? null : target.trim().toUpperCase();
+        if (!allowed(finding.getRemediationStatus(), normalizedTarget)) throw new IllegalStateException("Invalid remediation transition: " + finding.getRemediationStatus() + " -> " + target);
+        validateTargetRequirements(finding, normalizedTarget, comment); String previous = snapshot(finding);
+        finding.setRemediationStatus(normalizedTarget);
+        if (comment != null && !comment.isBlank()) finding.setResolutionComment(comment.trim());
+        if ("RESOLVED".equals(normalizedTarget)) { finding.setResolvedAt(LocalDateTime.now()); finding.setResolvedBy(actor); }
+        else if ("REJECTED".equals(normalizedTarget)) { finding.setResolvedAt(null); finding.setResolvedBy(null); }
+        return change(finding, actor, "REMEDIATION_" + normalizedTarget, previous);
     }
 
     @Transactional

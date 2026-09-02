@@ -23,7 +23,7 @@ public class WorkpaperReviewApiController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #request.tenantId(), #request.projectId())")
     public ResponseEntity<WorkpaperView> create(@RequestBody CreateWorkpaperRequest request,
                                                 @AuthenticationPrincipal UserDetails user) {
         Workpaper workpaper = workpaperService.create(request.title(), request.tenantId(), request.projectId(), user.getUsername());
@@ -31,36 +31,37 @@ public class WorkpaperReviewApiController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
     public ResponseEntity<WorkpaperView> get(@PathVariable Long id, @RequestParam String tenantId, @RequestParam String projectId) {
         Workpaper workpaper = workpaperService.findById(id, tenantId, projectId);
         return ResponseEntity.ok(toView(workpaper));
     }
 
     @GetMapping("/{id}/actions")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
     public ResponseEntity<List<ReviewActionView>> reviewActions(@PathVariable Long id, @RequestParam String tenantId, @RequestParam String projectId) {
         workpaperService.findById(id, tenantId, projectId);
-        List<ReviewAction> actions = workpaperService.findReviewActions(id);
+        List<ReviewAction> actions = workpaperService.findReviewActions(id, tenantId, projectId);
         return ResponseEntity.ok(actions.stream().map(this::toActionView).toList());
     }
 
     /** AUDITOR, LEAD_AUDITOR, ADMIN: start working on a workpaper */
     @PostMapping("/{id}/start")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
     public ResponseEntity<WorkpaperView> startProgress(@PathVariable Long id, @RequestParam String tenantId, @RequestParam String projectId,
                                                        @AuthenticationPrincipal UserDetails user) {
         workpaperService.findById(id, tenantId, projectId);
-        Workpaper workpaper = workpaperService.startProgress(id, user.getUsername());
+        Workpaper workpaper = workpaperService.startProgress(id, tenantId, projectId, user.getUsername());
         return ResponseEntity.ok(toView(workpaper));
     }
 
     /** AUDITOR, LEAD_AUDITOR, ADMIN: submit workpaper for review */
     @PostMapping("/{id}/submit")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
     public ResponseEntity<WorkpaperView> submit(@PathVariable Long id,
+                                                @RequestParam String tenantId, @RequestParam String projectId,
                                                 @AuthenticationPrincipal UserDetails user) {
-        Workpaper workpaper = workpaperService.submit(id, user.getUsername());
+        Workpaper workpaper = workpaperService.submit(id, tenantId, projectId, user.getUsername());
         return ResponseEntity.ok(toView(workpaper));
     }
 
@@ -68,9 +69,10 @@ public class WorkpaperReviewApiController {
     @PostMapping("/{id}/request-changes")
     @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<WorkpaperView> requestChanges(@PathVariable Long id,
+                                                        @RequestParam String tenantId, @RequestParam String projectId,
                                                         @RequestBody RequestChangesRequest request,
                                                         @AuthenticationPrincipal UserDetails user) {
-        Workpaper workpaper = workpaperService.requestChanges(id, user.getUsername(), request.comment());
+        Workpaper workpaper = workpaperService.requestChanges(id, tenantId, projectId, user.getUsername(), request.comment());
         return ResponseEntity.ok(toView(workpaper));
     }
 
@@ -78,16 +80,18 @@ public class WorkpaperReviewApiController {
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<WorkpaperView> approve(@PathVariable Long id,
+                                                 @RequestParam String tenantId, @RequestParam String projectId,
                                                  @AuthenticationPrincipal UserDetails user) {
-        Workpaper workpaper = workpaperService.approve(id, user.getUsername());
+        Workpaper workpaper = workpaperService.approve(id, tenantId, projectId, user.getUsername());
         return ResponseEntity.ok(toView(workpaper));
     }
 
     @PostMapping("/{id}/sign-off")
     @PreAuthorize("hasAnyRole('LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<WorkpaperView> signOff(@PathVariable Long id,
+                                                 @RequestParam String tenantId, @RequestParam String projectId,
                                                  @AuthenticationPrincipal UserDetails user) {
-        Workpaper workpaper = workpaperService.signOff(id, user.getUsername());
+        Workpaper workpaper = workpaperService.signOff(id, tenantId, projectId, user.getUsername());
         return ResponseEntity.ok(toView(workpaper));
     }
 

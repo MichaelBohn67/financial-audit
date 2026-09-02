@@ -35,3 +35,5 @@ databaseChangeLog:
       file: db/changelog/changes/027-scope-reporting-and-sampling.yaml
   - include:
       file: db/changelog/changes/028-scope-audit-events.yaml
+  - include:
+      file: db/changelog/changes/029-report-archives.yaml

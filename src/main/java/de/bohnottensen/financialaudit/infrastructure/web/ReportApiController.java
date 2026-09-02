@@ -105,6 +105,14 @@ public class ReportApiController {
         return ResponseEntity.ok(content);
     }
 
+    @PostMapping("/runs/{id}/archive")
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
+    public ResponseEntity<ReportExportService.ExportArtifact> archiveRun(
+            @PathVariable Long id, @RequestParam String tenantId, @RequestParam String projectId,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(reportExportService.archive(id, tenantId, projectId, user.getUsername()));
+    }
+
     // --- View helpers ---
 
     private ReportTemplateView toTemplateView(ReportTemplate t) {

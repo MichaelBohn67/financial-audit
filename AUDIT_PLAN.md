@@ -70,6 +70,10 @@ Report runs, sampling runs, report exports, dashboard metrics, and recent audit-
 
 All workpaper workflow transitions, review-action history, finding remediation operations, and finding-to-workpaper links now require and validate the tenant/project scope. A workpaper can only be linked to a finding from the same scope.
 
+### I. Berichtsexporte und Archivierung
+
+Abgeschlossene Berichte können als serverseitig erzeugtes, deterministisches JSON-Artefakt archiviert werden. Die Archivierung speichert SHA-256, Dateigröße, Scope, Ersteller, Zeitstempel und Manifest; sie ist idempotent und nur für abgeschlossene Läufe zulässig. Das Archivverzeichnis wird über `FINANCIAL_AUDIT_REPORT_ARCHIVE_DIRECTORY` konfiguriert.
+
 ## 5. Verification Notes
 
 - `mvn test`: 119 tests passed, 0 failures, 0 errors.

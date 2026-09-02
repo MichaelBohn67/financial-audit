@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 029-report-archives
+      author: financial-audit
+      changes:
+        - createTable:
+            tableName: report_archives
+            columns:
+              - column: { name: id, type: bigint, autoIncrement: true, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: report_run_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: tenant_id, type: varchar(100), constraints: { nullable: false } }
+              - column: { name: project_id, type: varchar(100), constraints: { nullable: false } }
+              - column: { name: storage_path, type: varchar(1024), constraints: { nullable: false } }
+              - column: { name: sha256, type: varchar(64), constraints: { nullable: false } }
+              - column: { name: content_length, type: bigint, constraints: { nullable: false } }
+              - column: { name: archived_by, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: archived_at, type: datetime, constraints: { nullable: false } }
+              - column: { name: manifest, type: varchar(4000), constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: report_archives
+            columnNames: report_run_id, tenant_id, project_id
+            constraintName: uq_report_archive_run_scope
+        - addForeignKeyConstraint:
+            baseTableName: report_archives
+            baseColumnNames: report_run_id
+            referencedTableName: report_runs
+            referencedColumnNames: id
+            constraintName: fk_report_archive_run

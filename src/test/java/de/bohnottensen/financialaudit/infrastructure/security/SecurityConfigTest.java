@@ -18,8 +18,6 @@ class SecurityConfigTest {
     @Autowired
     private InMemoryUserDetailsManager userDetailsService;
 
-    private final SecurityConfig securityConfig = new SecurityConfig();
-
     @Test
     void shouldExposeSecurityFilterChain() {
         assertThat(securityFilterChain).isNotNull();
@@ -28,8 +26,6 @@ class SecurityConfigTest {
 
     @Test
     void shouldConfigureAuditorLeadAuditorAndAdminUsers() {
-        assertThat(securityConfig.userDetailsService()).isNotNull();
-
         assertUser("auditor", "ROLE_AUDITOR");
         assertUser("lead", "ROLE_LEAD_AUDITOR");
         assertUser("admin", "ROLE_ADMIN");

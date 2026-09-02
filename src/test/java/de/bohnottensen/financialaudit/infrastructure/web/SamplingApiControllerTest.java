@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,7 +43,7 @@ class SamplingApiControllerTest {
         SamplingRun run = run(10L);
         when(samplingService.generateMusSample("Q1", 100, 5, 42)).thenReturn(run);
 
-        mockMvc.perform(post("/api/sampling/mus")
+        mockMvc.perform(post("/api/sampling/mus").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 Map.of("runName", "Q1", "populationSize", 100, "sampleSize", 5, "seed", 42))))
@@ -54,7 +55,7 @@ class SamplingApiControllerTest {
     @Test
     @WithMockUser(username = "auditor", roles = "AUDITOR")
     void invalidMusRequestIsRejected() throws Exception {
-        mockMvc.perform(post("/api/sampling/mus")
+        mockMvc.perform(post("/api/sampling/mus").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 Map.of("runName", "Q1", "populationSize", 100, "sampleSize", 0, "seed", 42))))
@@ -103,7 +104,7 @@ class SamplingApiControllerTest {
         when(samplingService.generateMusSample("Q1", 100, 5, 42))
                 .thenThrow(new IllegalArgumentException("Sample size exceeds population"));
 
-        mockMvc.perform(post("/api/sampling/mus")
+        mockMvc.perform(post("/api/sampling/mus").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 Map.of("runName", "Q1", "populationSize", 100, "sampleSize", 5, "seed", 42))))

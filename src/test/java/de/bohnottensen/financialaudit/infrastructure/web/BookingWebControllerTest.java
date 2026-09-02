@@ -19,6 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -85,7 +86,7 @@ class BookingWebControllerTest {
         savedBooking.setTransactionTimestamp(java.time.LocalDateTime.parse("2023-10-27T10:00:00"));
         when(bookingRepository.save(any(Booking.class))).thenReturn(savedBooking);
 
-        mockMvc.perform(post("/bookings")
+        mockMvc.perform(post("/bookings").with(csrf())
                 .param("tenantId", "TENANT-1")
                 .param("projectId", "PROJECT-1")
                 .param("documentId", "DOC-1")
@@ -108,7 +109,7 @@ class BookingWebControllerTest {
         savedBooking.setCurrency("EUR");
         when(bookingRepository.save(any(Booking.class))).thenReturn(savedBooking);
 
-        mockMvc.perform(post("/bookings")
+        mockMvc.perform(post("/bookings").with(csrf())
                         .param("tenantId", "TENANT-1")
                         .param("projectId", "PROJECT-1")
                         .param("documentId", "DOC-1")
@@ -151,7 +152,7 @@ class BookingWebControllerTest {
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(bookingRepository.save(any(Booking.class))).thenReturn(updated);
 
-        mockMvc.perform(post("/bookings/1")
+        mockMvc.perform(post("/bookings/1").with(csrf())
                         .param("tenantId", "TENANT-1")
                         .param("projectId", "PROJECT-1")
                         .param("documentId", "DOC-1")

@@ -1,0 +1,63 @@
+databaseChangeLog:
+  - changeSet:
+      id: 024-create-audit-file-model
+      author: financial-audit
+      changes:
+        - createTable:
+            tableName: audit_engagements
+            columns:
+              - column: {name: id, type: BIGINT, autoIncrement: true, constraints: {primaryKey: true, nullable: false}}
+              - column: {name: tenant_id, type: VARCHAR(100), constraints: {nullable: false}}
+              - column: {name: project_id, type: VARCHAR(100), constraints: {nullable: false}}
+              - column: {name: engagement_key, type: VARCHAR(100), constraints: {nullable: false, unique: true}}
+              - column: {name: client_name, type: VARCHAR(255), constraints: {nullable: false}}
+              - column: {name: period_start, type: DATE, constraints: {nullable: false}}
+              - column: {name: period_end, type: DATE, constraints: {nullable: false}}
+              - column: {name: status, type: VARCHAR(50), constraints: {nullable: false}}
+              - column: {name: created_by, type: VARCHAR(255), constraints: {nullable: false}}
+              - column: {name: created_at, type: DATETIME(6), constraints: {nullable: false}}
+        - createTable:
+            tableName: audit_risks
+            columns:
+              - column: {name: id, type: BIGINT, autoIncrement: true, constraints: {primaryKey: true, nullable: false}}
+              - column: {name: engagement_id, type: BIGINT, constraints: {nullable: false, referencedTableName: audit_engagements, referencedColumnNames: id, foreignKeyName: fk_risk_engagement}}
+              - column: {name: risk_code, type: VARCHAR(50), constraints: {nullable: false}}
+              - column: {name: title, type: VARCHAR(255), constraints: {nullable: false}}
+              - column: {name: description, type: VARCHAR(4000), constraints: {nullable: false}}
+              - column: {name: assertion, type: VARCHAR(100)}
+              - column: {name: inherent_risk, type: VARCHAR(20), constraints: {nullable: false}}
+              - column: {name: control_risk, type: VARCHAR(20), constraints: {nullable: false}}
+              - column: {name: response, type: VARCHAR(4000)}
+              - column: {name: status, type: VARCHAR(50), constraints: {nullable: false}}
+              - column: {name: created_by, type: VARCHAR(255), constraints: {nullable: false}}
+              - column: {name: created_at, type: DATETIME(6), constraints: {nullable: false}}
+        - createTable:
+            tableName: audit_procedures
+            columns:
+              - column: {name: id, type: BIGINT, autoIncrement: true, constraints: {primaryKey: true, nullable: false}}
+              - column: {name: engagement_id, type: BIGINT, constraints: {nullable: false, referencedTableName: audit_engagements, referencedColumnNames: id, foreignKeyName: fk_procedure_engagement}}
+              - column: {name: risk_id, type: BIGINT, constraints: {referencedTableName: audit_risks, referencedColumnNames: id, foreignKeyName: fk_procedure_risk}}
+              - column: {name: workpaper_id, type: BIGINT, constraints: {referencedTableName: workpapers, referencedColumnNames: id, foreignKeyName: fk_procedure_workpaper}}
+              - column: {name: procedure_code, type: VARCHAR(50), constraints: {nullable: false}}
+              - column: {name: title, type: VARCHAR(255), constraints: {nullable: false}}
+              - column: {name: objective, type: VARCHAR(4000), constraints: {nullable: false}}
+              - column: {name: procedure_type, type: VARCHAR(50), constraints: {nullable: false}}
+              - column: {name: status, type: VARCHAR(50), constraints: {nullable: false}}
+              - column: {name: performed_by, type: VARCHAR(255)}
+              - column: {name: performed_at, type: DATETIME(6)}
+              - column: {name: conclusion, type: VARCHAR(4000)}
+              - column: {name: created_at, type: DATETIME(6), constraints: {nullable: false}}
+        - createTable:
+            tableName: workpaper_evidence
+            columns:
+              - column: {name: id, type: BIGINT, autoIncrement: true, constraints: {primaryKey: true, nullable: false}}
+              - column: {name: workpaper_id, type: BIGINT, constraints: {nullable: false, referencedTableName: workpapers, referencedColumnNames: id, foreignKeyName: fk_evidence_workpaper}}
+              - column: {name: procedure_id, type: BIGINT, constraints: {referencedTableName: audit_procedures, referencedColumnNames: id, foreignKeyName: fk_evidence_procedure}}
+              - column: {name: evidence_type, type: VARCHAR(50), constraints: {nullable: false}}
+              - column: {name: file_name, type: VARCHAR(255), constraints: {nullable: false}}
+              - column: {name: reference_uri, type: VARCHAR(1024), constraints: {nullable: false}}
+              - column: {name: sha256, type: VARCHAR(64), constraints: {nullable: false}}
+              - column: {name: mime_type, type: VARCHAR(255)}
+              - column: {name: uploaded_by, type: VARCHAR(255), constraints: {nullable: false}}
+              - column: {name: uploaded_at, type: DATETIME(6), constraints: {nullable: false}}
+        - createIndex: {tableName: audit_engagements, indexName: ix_engagement_scope, columns: [{column: {name: tenant_id}}, {column: {name: project_id}}]}

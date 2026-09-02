@@ -25,3 +25,5 @@ databaseChangeLog:
       file: db/changelog/changes/021-create-tenant-project-scope.yaml
   - include:
       file: db/changelog/changes/023-fix-scope-unique-constraints.yaml
+  - include:
+      file: db/changelog/changes/024-create-audit-file-model.yaml

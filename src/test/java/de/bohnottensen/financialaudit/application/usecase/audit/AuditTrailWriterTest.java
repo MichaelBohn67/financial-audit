@@ -20,7 +20,7 @@ class AuditTrailWriterTest {
             return event;
         });
 
-        AuditTrailWriter writer = new AuditTrailWriter(repository);
+        AuditTrailWriter writer = new AuditTrailWriter(repository, new AuditIntegrityService(repository));
 
         AuditEvent result = writer.record(
                 "BOOKING",

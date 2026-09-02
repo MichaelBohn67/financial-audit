@@ -27,7 +27,8 @@ public class AutomaticAuditEventListener implements PostInsertEventListener, Pos
         PostDeleteEventListener {
     private static final Set<String> AUDITED_ENTITIES = new HashSet<>(Set.of(
             "Booking", "Finding", "Workpaper", "ReviewAction", "SamplingRun", "ReportRun",
-            "MaterialityConfig", "ImportJob"));
+            "MaterialityConfig", "ImportJob", "AuditEngagement", "AuditRisk", "AuditProcedure", "WorkpaperEvidence",
+            "Tenant", "AuditProject", "ProjectMembership"));
 
     @Override
     public void onPostInsert(PostInsertEvent event) {
@@ -77,7 +78,29 @@ public class AutomaticAuditEventListener implements PostInsertEventListener, Pos
         event.setSummary("Automatic persistence audit event");
         event.setPreviousValue(previous);
         event.setCurrentValue(current);
+        event.getMetadata().initializeOccurredAtIfMissing();
+        // Never query or flush through the active Hibernate session here. A post event
+        // runs during flush and doing so causes recursive flushes and assertion failures.
+        // Automatic events form independently verifiable append records; manual events
+        // may additionally link to the preceding record through AuditTrailWriter.
+        String previousHash = "";
+        event.setPreviousHash(previousHash);
+        event.setRequestId(org.slf4j.MDC.get("requestId"));
+        event.setSourceIp(org.slf4j.MDC.get("sourceIp"));
+        event.setIntegrityHash(hash(event, previousHash));
         session.persist(event);
+    }
+
+    private String hash(AuditEvent event, String previousHash) {
+        try {
+            String value = String.join("|", previousHash, event.getEntityType(), String.valueOf(event.getEntityId()),
+                    event.getEventType(), event.getActor(), event.getSummary(), String.valueOf(event.getPreviousValue()),
+                    String.valueOf(event.getCurrentValue()), String.valueOf(event.getOccurredAt()),
+                    event.getRequestId() == null ? "" : event.getRequestId(),
+                    event.getSourceIp() == null ? "" : event.getSourceIp());
+            return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        } catch (Exception e) { throw new IllegalStateException("Unable to calculate audit integrity hash", e); }
     }
 
     private String actor() {

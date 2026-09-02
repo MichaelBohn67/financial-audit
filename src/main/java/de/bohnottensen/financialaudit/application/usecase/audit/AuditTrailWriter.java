@@ -8,9 +8,11 @@ import org.springframework.stereotype.Service;
 public class AuditTrailWriter {
 
     private final AuditEventRepository auditEventRepository;
+    private final AuditIntegrityService integrity;
 
-    public AuditTrailWriter(AuditEventRepository auditEventRepository) {
+    public AuditTrailWriter(AuditEventRepository auditEventRepository, AuditIntegrityService integrity) {
         this.auditEventRepository = auditEventRepository;
+        this.integrity = integrity;
     }
 
     public AuditEvent record(String entityType,
@@ -28,6 +30,15 @@ public class AuditTrailWriter {
         auditEvent.setSummary(summary);
         auditEvent.setPreviousValue(previousValue);
         auditEvent.setCurrentValue(currentValue);
+        auditEvent.getMetadata().initializeOccurredAtIfMissing();
+        auditEvent.setRequestId(requestId());
+        auditEvent.setSourceIp(org.slf4j.MDC.get("sourceIp"));
+        auditEvent.setPreviousHash(integrity.latestHash());
+        auditEvent.setIntegrityHash(integrity.calculateHash(auditEvent, auditEvent.getPreviousHash()));
         return auditEventRepository.save(auditEvent);
+    }
+
+    private String requestId() {
+        return org.slf4j.MDC.get("requestId");
     }
 }

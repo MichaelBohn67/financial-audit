@@ -27,7 +27,8 @@ public class SecurityConfig {
                         .requestMatchers("/dashboard").authenticated()
                         .requestMatchers("/sampling").authenticated()
                         .requestMatchers("/api/**", "/open-banking/**").authenticated()
-                        .anyRequest().permitAll()
+                        .requestMatchers("/", "/error", "/login", "/css/**", "/js/**", "/images/**", "/actuator/health").permitAll()
+                        .anyRequest().authenticated()
                 )
                 .httpBasic(httpBasic -> {})
                 .formLogin(formLogin -> {});

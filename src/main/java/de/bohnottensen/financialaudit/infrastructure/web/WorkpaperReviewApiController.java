@@ -26,20 +26,21 @@ public class WorkpaperReviewApiController {
     @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public ResponseEntity<WorkpaperView> create(@RequestBody CreateWorkpaperRequest request,
                                                 @AuthenticationPrincipal UserDetails user) {
-        Workpaper workpaper = workpaperService.create(request.title(), user.getUsername());
+        Workpaper workpaper = workpaperService.create(request.title(), request.tenantId(), request.projectId(), user.getUsername());
         return ResponseEntity.ok(toView(workpaper));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
-    public ResponseEntity<WorkpaperView> get(@PathVariable Long id) {
-        Workpaper workpaper = workpaperService.findById(id);
+    public ResponseEntity<WorkpaperView> get(@PathVariable Long id, @RequestParam String tenantId, @RequestParam String projectId) {
+        Workpaper workpaper = workpaperService.findById(id, tenantId, projectId);
         return ResponseEntity.ok(toView(workpaper));
     }
 
     @GetMapping("/{id}/actions")
     @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
-    public ResponseEntity<List<ReviewActionView>> reviewActions(@PathVariable Long id) {
+    public ResponseEntity<List<ReviewActionView>> reviewActions(@PathVariable Long id, @RequestParam String tenantId, @RequestParam String projectId) {
+        workpaperService.findById(id, tenantId, projectId);
         List<ReviewAction> actions = workpaperService.findReviewActions(id);
         return ResponseEntity.ok(actions.stream().map(this::toActionView).toList());
     }
@@ -47,8 +48,9 @@ public class WorkpaperReviewApiController {
     /** AUDITOR, LEAD_AUDITOR, ADMIN: start working on a workpaper */
     @PostMapping("/{id}/start")
     @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
-    public ResponseEntity<WorkpaperView> startProgress(@PathVariable Long id,
+    public ResponseEntity<WorkpaperView> startProgress(@PathVariable Long id, @RequestParam String tenantId, @RequestParam String projectId,
                                                        @AuthenticationPrincipal UserDetails user) {
+        workpaperService.findById(id, tenantId, projectId);
         Workpaper workpaper = workpaperService.startProgress(id, user.getUsername());
         return ResponseEntity.ok(toView(workpaper));
     }
@@ -112,7 +114,7 @@ public class WorkpaperReviewApiController {
         );
     }
 
-    public record CreateWorkpaperRequest(String title) {}
+    public record CreateWorkpaperRequest(String title, String tenantId, String projectId) {}
 
     public record RequestChangesRequest(String comment) {}
 

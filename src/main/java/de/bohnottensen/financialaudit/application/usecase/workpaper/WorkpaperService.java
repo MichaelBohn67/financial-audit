@@ -49,6 +49,13 @@ public class WorkpaperService {
         return savedWorkpaper;
     }
 
+    public Workpaper create(String title, String tenantId, String projectId, String createdBy) {
+        Workpaper workpaper = create(title, createdBy);
+        workpaper.setTenantId(tenantId);
+        workpaper.setScopeProjectId(projectId);
+        return workpaperRepository.save(workpaper);
+    }
+
     @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public Workpaper startProgress(Long workpaperId, String actor) {
         return transition(workpaperId, actor, ReviewActionType.START, WorkpaperStatus.IN_PROGRESS, "Workpaper progress started");
@@ -78,6 +85,10 @@ public class WorkpaperService {
     @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
     public Workpaper findById(Long workpaperId) {
         return workpaperRepository.findById(workpaperId).orElseThrow();
+    }
+
+    public Workpaper findById(Long workpaperId, String tenantId, String projectId) {
+        return workpaperRepository.findByIdAndTenantIdAndScopeProjectId(workpaperId, tenantId, projectId).orElseThrow();
     }
 
     @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")

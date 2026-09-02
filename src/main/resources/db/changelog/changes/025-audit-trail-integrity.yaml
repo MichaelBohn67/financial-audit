@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 025-audit-trail-integrity
+      author: financial-audit
+      changes:
+        - addColumn:
+            tableName: audit_events
+            columns:
+              - column: {name: previous_hash, type: VARCHAR(64)}
+              - column: {name: integrity_hash, type: VARCHAR(64)}
+              - column: {name: request_id, type: VARCHAR(100)}
+              - column: {name: source_ip, type: VARCHAR(45)}
+  - changeSet:
+      id: 025-mariadb-immutable-audit-triggers
+      author: financial-audit
+      dbms: mariadb
+      changes:
+        - sql:
+            sql: "CREATE TRIGGER trg_audit_events_no_update BEFORE UPDATE ON audit_events FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'audit_events are immutable'"
+        - sql:
+            sql: "CREATE TRIGGER trg_audit_events_no_delete BEFORE DELETE ON audit_events FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'audit_events cannot be deleted'"

@@ -5,4 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkpaperRepository extends JpaRepository<Workpaper, Long> {
     long countByStatus(String status);
+    java.util.Optional<Workpaper> findByIdAndTenantIdAndScopeProjectId(Long id, String tenantId, String projectId);
+    java.util.List<Workpaper> findByTenantIdAndScopeProjectId(String tenantId, String projectId);
 }

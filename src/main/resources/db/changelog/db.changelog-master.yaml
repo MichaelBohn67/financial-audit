@@ -27,3 +27,7 @@ databaseChangeLog:
       file: db/changelog/changes/023-fix-scope-unique-constraints.yaml
   - include:
       file: db/changelog/changes/024-create-audit-file-model.yaml
+  - include:
+      file: db/changelog/changes/025-audit-trail-integrity.yaml
+  - include:
+      file: db/changelog/changes/026-workpaper-scope.yaml

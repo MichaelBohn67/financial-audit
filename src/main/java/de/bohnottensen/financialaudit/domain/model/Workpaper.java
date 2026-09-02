@@ -19,6 +19,12 @@ public class Workpaper {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tenant_id", length = 100)
+    private String tenantId;
+
+    @Column(name = "scope_project_id", length = 100)
+    private String scopeProjectId;
+
     @Column(nullable = false)
     private String title;
 
@@ -57,6 +63,10 @@ public class Workpaper {
     public Long getId() {
         return id;
     }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String value) { tenantId = value; }
+    public String getScopeProjectId() { return scopeProjectId; }
+    public void setScopeProjectId(String value) { scopeProjectId = value; }
 
     public void setId(Long id) {
         this.id = id;

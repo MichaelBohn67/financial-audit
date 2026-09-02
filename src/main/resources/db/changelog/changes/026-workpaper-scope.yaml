@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 026-workpaper-scope
+      author: financial-audit
+      changes:
+        - addColumn:
+            tableName: workpapers
+            columns:
+              - column: {name: tenant_id, type: VARCHAR(100)}
+              - column: {name: scope_project_id, type: VARCHAR(100)}
+        - createIndex:
+            tableName: workpapers
+            indexName: ix_workpapers_scope
+            columns:
+              - column: {name: tenant_id}
+              - column: {name: scope_project_id}

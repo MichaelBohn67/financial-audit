@@ -478,5 +478,203 @@ class DomainEntitiesTest {
         Booking b = new Booking();
         b.onCreate();
         assertThat(b.getCreatedAt()).isNotNull();
+
+        // User onCreate and onUpdate
+        User user = new User();
+        user.setId(5L);
+        user.setUsername("testuser");
+        user.setPasswordHash("hash123");
+        user.setEmail("test@example.com");
+        user.setFirstName("First");
+        user.setLastName("Last");
+        user.setEnabled(true);
+        user.onCreate();
+        user.onUpdate();
+
+        assertThat(user.getId()).isEqualTo(5L);
+        assertThat(user.getUsername()).isEqualTo("testuser");
+        assertThat(user.getPasswordHash()).isEqualTo("hash123");
+        assertThat(user.getEmail()).isEqualTo("test@example.com");
+        assertThat(user.getFirstName()).isEqualTo("First");
+        assertThat(user.getLastName()).isEqualTo("Last");
+        assertThat(user.isEnabled()).isTrue();
+        assertThat(user.getCreatedAt()).isNotNull();
+        assertThat(user.getUpdatedAt()).isNotNull();
+
+        User userPreset = new User();
+        userPreset.setCreatedAt(fixedTime);
+        userPreset.setUpdatedAt(fixedTime);
+        userPreset.onCreate();
+        assertThat(userPreset.getCreatedAt()).isEqualTo(fixedTime);
+        assertThat(userPreset.getUpdatedAt()).isEqualTo(fixedTime);
+
+        // AuditEngagement
+        AuditEngagement engNull = new AuditEngagement();
+        engNull.onCreate();
+        assertThat(engNull.getCreatedAt()).isNotNull();
+        AuditEngagement engPreset = new AuditEngagement();
+        setField(engPreset, "createdAt", fixedTime);
+        engPreset.onCreate();
+        assertThat(engPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        // AuditEvent rejectUpdate
+        AuditEvent ae = new AuditEvent();
+        org.assertj.core.api.Assertions.assertThatThrownBy(ae::rejectUpdate)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Audit events are immutable");
+
+        // AuditProcedure
+        AuditProcedure procNull = new AuditProcedure();
+        procNull.onCreate();
+        assertThat(procNull.getCreatedAt()).isNotNull();
+        AuditProcedure procPreset = new AuditProcedure();
+        setField(procPreset, "createdAt", fixedTime);
+        procPreset.onCreate();
+        assertThat(procPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        // AuditProject
+        AuditProject projNull = new AuditProject();
+        projNull.onCreate();
+        assertThat(projNull.getCreatedAt()).isNotNull();
+        AuditProject projPreset = new AuditProject();
+        setField(projPreset, "createdAt", fixedTime);
+        projPreset.onCreate();
+        assertThat(projPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        // AuditRisk
+        AuditRisk riskNull = new AuditRisk();
+        riskNull.onCreate();
+        assertThat(riskNull.getCreatedAt()).isNotNull();
+        AuditRisk riskPreset = new AuditRisk();
+        setField(riskPreset, "createdAt", fixedTime);
+        riskPreset.onCreate();
+        assertThat(riskPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        // BenfordAnalysisRun & BenfordDigitStat
+        BenfordAnalysisRun barPreset = new BenfordAnalysisRun();
+        setField(barPreset, "createdAt", fixedTime);
+        barPreset.onCreate();
+        assertThat(barPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        BenfordDigitStat bdsPreset = new BenfordDigitStat();
+        setField(bdsPreset, "createdAt", fixedTime);
+        bdsPreset.onCreate();
+        assertThat(bdsPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        // ImportJobProtocolEntry
+        ImportJobProtocolEntry ijpeNull = new ImportJobProtocolEntry();
+        ijpeNull.onCreate();
+        assertThat(ijpeNull.getCreatedAt()).isNotNull();
+        ImportJobProtocolEntry ijpePreset = new ImportJobProtocolEntry();
+        setField(ijpePreset, "createdAt", fixedTime);
+        ijpePreset.onCreate();
+        assertThat(ijpePreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        // PatternAnalysisIssue & PatternAnalysisRun
+        PatternAnalysisIssue paiNull = new PatternAnalysisIssue();
+        paiNull.onCreate();
+        assertThat(paiNull.getCreatedAt()).isNotNull();
+        PatternAnalysisIssue paiPreset = new PatternAnalysisIssue();
+        setField(paiPreset, "createdAt", fixedTime);
+        paiPreset.onCreate();
+        assertThat(paiPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        PatternAnalysisRun parNull = new PatternAnalysisRun();
+        parNull.onCreate();
+        assertThat(parNull.getCreatedAt()).isNotNull();
+        PatternAnalysisRun parPreset = new PatternAnalysisRun();
+        setField(parPreset, "createdAt", fixedTime);
+        parPreset.onCreate();
+        assertThat(parPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        // Permission, Role, RolePermission
+        Permission permPreset = new Permission();
+        setField(permPreset, "createdAt", fixedTime);
+        permPreset.onCreate();
+        assertThat(permPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        Role rolePreset = new Role();
+        setField(rolePreset, "createdAt", fixedTime);
+        rolePreset.onCreate();
+        assertThat(rolePreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        RolePermission rpPreset = new RolePermission();
+        setField(rpPreset, "assignedAt", fixedTime);
+        rpPreset.onCreate();
+        assertThat(rpPreset.getAssignedAt()).isEqualTo(fixedTime);
+
+        // ProjectMembership, ReportArchive, ReportTemplate, ReviewAction
+        ProjectMembership pmNull = new ProjectMembership();
+        pmNull.onCreate();
+        assertThat(pmNull.getAssignedAt()).isNotNull();
+        ProjectMembership pmPreset = new ProjectMembership();
+        setField(pmPreset, "assignedAt", fixedTime);
+        pmPreset.onCreate();
+        assertThat(pmPreset.getAssignedAt()).isEqualTo(fixedTime);
+
+        ReportArchive raNull = new ReportArchive();
+        raNull.onCreate();
+        assertThat(raNull.getArchivedAt()).isNotNull();
+        ReportArchive raPreset = new ReportArchive();
+        setField(raPreset, "archivedAt", fixedTime);
+        raPreset.onCreate();
+        assertThat(raPreset.getArchivedAt()).isEqualTo(fixedTime);
+
+        ReportTemplate rtPreset = new ReportTemplate();
+        setField(rtPreset, "createdAt", fixedTime);
+        rtPreset.onCreate();
+        assertThat(rtPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        ReviewAction revPreset = new ReviewAction();
+        setField(revPreset, "createdAt", fixedTime);
+        revPreset.onCreate();
+        assertThat(revPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        // SamplingRun, SamplingRunItem, Tenant, UserRole, WorkpaperEvidence
+        SamplingRun srPreset = new SamplingRun();
+        setField(srPreset, "createdAt", fixedTime);
+        srPreset.onCreate();
+        assertThat(srPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        SamplingRunItem sriNull = new SamplingRunItem();
+        sriNull.onCreate();
+        assertThat(sriNull.getCreatedAt()).isNotNull();
+        SamplingRunItem sriPreset = new SamplingRunItem();
+        setField(sriPreset, "createdAt", fixedTime);
+        sriPreset.onCreate();
+        assertThat(sriPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        Tenant tenantNull = new Tenant();
+        tenantNull.onCreate();
+        assertThat(tenantNull.getCreatedAt()).isNotNull();
+        Tenant tenantPreset = new Tenant();
+        setField(tenantPreset, "createdAt", fixedTime);
+        tenantPreset.onCreate();
+        assertThat(tenantPreset.getCreatedAt()).isEqualTo(fixedTime);
+
+        UserRole urPreset = new UserRole();
+        setField(urPreset, "assignedAt", fixedTime);
+        urPreset.onCreate();
+        assertThat(urPreset.getAssignedAt()).isEqualTo(fixedTime);
+
+        WorkpaperEvidence weNull = new WorkpaperEvidence();
+        weNull.onCreate();
+        assertThat(weNull.getUploadedAt()).isNotNull();
+        WorkpaperEvidence wePreset = new WorkpaperEvidence();
+        setField(wePreset, "uploadedAt", fixedTime);
+        wePreset.onCreate();
+        assertThat(wePreset.getUploadedAt()).isEqualTo(fixedTime);
+    }
+
+    private static void setField(Object target, String fieldName, Object value) throws Exception {
+        java.lang.reflect.Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(target, value);
+    }
+
+    private static Object getField(Object target, String fieldName) throws Exception {
+        java.lang.reflect.Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(target);
     }
 }

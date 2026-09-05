@@ -232,6 +232,60 @@ class AutomaticAuditEventListenerTest {
                 .contains("collection=[collection size=0];");
     }
 
+    @Test
+    void shouldHandleScopeResolutionAndFindingBookingFallback() {
+        // 1. Finding with booking scope fallback
+        de.bohnottensen.financialaudit.domain.model.Finding findingWithBooking = new de.bohnottensen.financialaudit.domain.model.Finding();
+        findingWithBooking.setId(10L);
+        Booking booking = new Booking();
+        booking.setId(20L);
+        booking.setTenantId("TENANT_B");
+        booking.setProjectId("PROJECT_B");
+        findingWithBooking.setBooking(booking);
+
+        listener.onPostInsert(new PostInsertEvent(findingWithBooking, 10L, new Object[]{}, persister, session));
+        AuditEvent findingEvent = (AuditEvent) persistedEntities.get(persistedEntities.size() - 1);
+        assertThat(findingEvent.getTenantId()).isEqualTo("TENANT_B");
+        assertThat(findingEvent.getProjectId()).isEqualTo("PROJECT_B");
+
+        // 2. Finding with null booking
+        de.bohnottensen.financialaudit.domain.model.Finding findingNullBooking = new de.bohnottensen.financialaudit.domain.model.Finding();
+        findingNullBooking.setId(11L);
+        listener.onPostInsert(new PostInsertEvent(findingNullBooking, 11L, new Object[]{}, persister, session));
+        AuditEvent findingNullEvent = (AuditEvent) persistedEntities.get(persistedEntities.size() - 1);
+        assertThat(findingNullEvent.getTenantId()).isNull();
+        assertThat(findingNullEvent.getProjectId()).isNull();
+
+        // 3. Workpaper with getScopeProjectId
+        de.bohnottensen.financialaudit.domain.model.Workpaper workpaper = new de.bohnottensen.financialaudit.domain.model.Workpaper();
+        workpaper.setId(30L);
+        workpaper.setTenantId("TENANT_SP");
+        workpaper.setScopeProjectId("PROJECT_SP");
+        listener.onPostInsert(new PostInsertEvent(workpaper, 30L, new Object[]{}, persister, session));
+        AuditEvent scopeEvent = (AuditEvent) persistedEntities.get(persistedEntities.size() - 1);
+        assertThat(scopeEvent.getTenantId()).isEqualTo("TENANT_SP");
+        assertThat(scopeEvent.getProjectId()).isEqualTo("PROJECT_SP");
+    }
+
+    @Test
+    void shouldHandleReflectiveEntityIdAndNonCollectionIterable() {
+        Booking booking = new Booking();
+        booking.setId(99L);
+
+        propertyNames = new String[]{"entityWithId", "customIterable"};
+        Iterable<String> customIterable = () -> List.of("x", "y").iterator();
+        Booking ref = new Booking();
+        ref.setId(555L);
+        Object[] state = new Object[]{ref, customIterable};
+
+        listener.onPostInsert(new PostInsertEvent(booking, 99L, state, persister, session));
+
+        AuditEvent recorded = (AuditEvent) persistedEntities.get(persistedEntities.size() - 1);
+        assertThat(recorded.getCurrentValue())
+                .contains("entityWithId=Booking#555;")
+                .contains("customIterable=[collection size=unknown];");
+    }
+
     static class PlainValue { }
 
     enum TestKind { VALUE }

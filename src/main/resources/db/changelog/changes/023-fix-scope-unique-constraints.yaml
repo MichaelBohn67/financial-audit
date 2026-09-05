@@ -3,6 +3,11 @@ databaseChangeLog:
       id: 023-fix-scope-unique-constraints
       author: financial-audit
       changes:
+        - createIndex:
+            tableName: audit_projects
+            indexName: ix_audit_projects_tenant_id
+            columns:
+              - column: {name: tenant_id}
         - dropUniqueConstraint:
             tableName: audit_projects
             constraintName: uq_project_tenant_key

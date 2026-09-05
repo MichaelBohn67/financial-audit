@@ -242,6 +242,55 @@ class BenfordAnalysisServiceTest {
         verify(statRepository, times(9)).save(any(BenfordDigitStat.class));
     }
 
+    @Test
+    void shouldEvaluateSuspiciousThresholdBoundariesAroundPointZeroEight() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        FindingRepository findingRepository = mock(FindingRepository.class);
+        BenfordAnalysisRunRepository runRepository = mock(BenfordAnalysisRunRepository.class);
+        BenfordDigitStatRepository statRepository = mock(BenfordDigitStatRepository.class);
+        AuditTrailWriter auditTrailWriter = mock(AuditTrailWriter.class);
+
+        when(runRepository.save(any(BenfordAnalysisRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(statRepository.save(any(BenfordDigitStat.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(findingRepository.save(any(Finding.class))).thenAnswer(invocation -> {
+            Finding f = invocation.getArgument(0);
+            f.setId(100L);
+            return f;
+        });
+
+        // Test with a synthetic service or controlled distribution
+        BenfordAnalysisService service = new BenfordAnalysisService(
+                bookingRepository, findingRepository, runRepository, statRepository, auditTrailWriter
+        );
+
+        // Leading digit 1 expected ratio is 0.301030.
+        // If sampleSize = 100:
+        // observedCount = 38 -> observedRatio = 0.380000 -> deviation = 0.078970 (< 0.08, not suspicious)
+        // observedCount = 39 -> observedRatio = 0.390000 -> deviation = 0.088970 (> 0.08, suspicious)
+        List<Booking> bookings = new ArrayList<>();
+        for (int i = 0; i < 38; i++) {
+            Booking b = booking(i + 1, "B1", new BigDecimal("100.00"));
+            b.setId((long) (i + 1));
+            bookings.add(b);
+        }
+        for (int i = 0; i < 62; i++) {
+            Booking b = booking(100 + i, "B2", new BigDecimal("200.00"));
+            b.setId((long) (100 + i));
+            bookings.add(b);
+        }
+        when(bookingRepository.findAll()).thenReturn(bookings);
+
+        BenfordAnalysisResult res = service.run("v1", "ctx");
+        // Check digit 1 deviation is 0.078970 (below 0.08)
+        BenfordAnalysisResult.DigitResult d1 = res.digitResults().stream().filter(d -> d.digit() == 1).findFirst().orElseThrow();
+        assertThat(d1.observedRatio()).isEqualByComparingTo("0.380000");
+        assertThat(d1.absoluteDeviation()).isEqualByComparingTo("0.078970");
+
+        // Verify leadingDigit returns -1 for unparseable or zero amounts
+        Booking zeroDigits = booking(999, "zeros", new BigDecimal("0.000"));
+        assertThat(service.leadingDigit(zeroDigits)).isEqualTo(-1);
+    }
+
     private Booking booking(long foreignId, String description, BigDecimal amount) {
         Booking booking = new Booking();
         booking.setForeignTransactionId(foreignId);

@@ -42,12 +42,12 @@ class WorkpaperReviewApiControllerTest {
     @Test
     @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldCreateWorkpaper() throws Exception {
-        when(workpaperService.create(anyString(), anyString())).thenReturn(workpaper(1L, "WP-1", "DRAFT", "assistant"));
+        when(workpaperService.create("WP-1", "TENANT-1", "PROJECT-1", "assistant")).thenReturn(workpaper(1L, "WP-1", "DRAFT", "assistant"));
 
         mockMvc.perform(post("/api/workpapers")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("title", "WP-1"))))
+                        .content(objectMapper.writeValueAsString(Map.of("title", "WP-1", "tenantId", "TENANT-1", "projectId", "PROJECT-1"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("WP-1"))
                 .andExpect(jsonPath("$.status").value("DRAFT"));
@@ -56,9 +56,12 @@ class WorkpaperReviewApiControllerTest {
     @Test
     @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldStartProgress() throws Exception {
-        when(workpaperService.startProgress(anyLong(), anyString())).thenReturn(workpaper(1L, "WP-1", "IN_PROGRESS", "assistant"));
+        when(workpaperService.findById(1L, "TENANT-1", "PROJECT-1")).thenReturn(workpaper(1L, "WP-1", "DRAFT", "assistant"));
+        when(workpaperService.startProgress(1L, "TENANT-1", "PROJECT-1", "assistant")).thenReturn(workpaper(1L, "WP-1", "IN_PROGRESS", "assistant"));
 
-        mockMvc.perform(post("/api/workpapers/1/start").with(csrf()))
+        mockMvc.perform(post("/api/workpapers/1/start").with(csrf())
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
     }
@@ -66,9 +69,11 @@ class WorkpaperReviewApiControllerTest {
     @Test
     @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldSubmitWorkpaper() throws Exception {
-        when(workpaperService.submit(anyLong(), anyString())).thenReturn(workpaper(1L, "WP-1", "SUBMITTED", "assistant"));
+        when(workpaperService.submit(1L, "TENANT-1", "PROJECT-1", "assistant")).thenReturn(workpaper(1L, "WP-1", "SUBMITTED", "assistant"));
 
-        mockMvc.perform(post("/api/workpapers/1/submit").with(csrf()))
+        mockMvc.perform(post("/api/workpapers/1/submit").with(csrf())
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SUBMITTED"));
     }
@@ -76,11 +81,13 @@ class WorkpaperReviewApiControllerTest {
     @Test
     @WithMockUser(username = "senior", roles = "LEAD_AUDITOR")
     void seniorAuditorShouldRequestChanges() throws Exception {
-        when(workpaperService.requestChanges(anyLong(), anyString(), anyString()))
+        when(workpaperService.requestChanges(1L, "TENANT-1", "PROJECT-1", "senior", "Need more evidence"))
                 .thenReturn(workpaper(1L, "WP-1", "CHANGES_REQUESTED", "senior"));
 
         mockMvc.perform(post("/api/workpapers/1/request-changes")
                         .with(csrf())
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("comment", "Need more evidence"))))
                 .andExpect(status().isOk())
@@ -92,6 +99,8 @@ class WorkpaperReviewApiControllerTest {
     void assistantShouldNotBeAllowedToRequestChanges() throws Exception {
         mockMvc.perform(post("/api/workpapers/1/request-changes")
                         .with(csrf())
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("comment", "Attempt"))))
                 .andExpect(status().isForbidden());
@@ -100,10 +109,12 @@ class WorkpaperReviewApiControllerTest {
     @Test
     @WithMockUser(username = "wirtschaftspruefer", roles = "LEAD_AUDITOR")
     void wirtschaftsprueferShouldApproveWorkpaper() throws Exception {
-        when(workpaperService.approve(anyLong(), anyString()))
+        when(workpaperService.approve(1L, "TENANT-1", "PROJECT-1", "wirtschaftspruefer"))
                 .thenReturn(workpaper(1L, "WP-1", "APPROVED", "wirtschaftspruefer"));
 
-        mockMvc.perform(post("/api/workpapers/1/approve").with(csrf()))
+        mockMvc.perform(post("/api/workpapers/1/approve").with(csrf())
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
     }
@@ -111,17 +122,21 @@ class WorkpaperReviewApiControllerTest {
     @Test
     @WithMockUser(username = "assistant", roles = "AUDITOR")
     void assistantShouldNotBeAllowedToApprove() throws Exception {
-        mockMvc.perform(post("/api/workpapers/1/approve").with(csrf()))
+        mockMvc.perform(post("/api/workpapers/1/approve").with(csrf())
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(username = "lead", roles = "LEAD_AUDITOR")
     void leadAuditorShouldSignOffApprovedWorkpaper() throws Exception {
-        when(workpaperService.signOff(anyLong(), anyString()))
+        when(workpaperService.signOff(1L, "TENANT-1", "PROJECT-1", "lead"))
                 .thenReturn(workpaper(1L, "WP-1", "SIGNED_OFF", "lead"));
 
-        mockMvc.perform(post("/api/workpapers/1/sign-off").with(csrf()))
+        mockMvc.perform(post("/api/workpapers/1/sign-off").with(csrf())
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SIGNED_OFF"));
     }
@@ -129,16 +144,20 @@ class WorkpaperReviewApiControllerTest {
     @Test
     @WithMockUser(username = "senior", roles = "AUDITOR")
     void seniorAuditorShouldNotBeAllowedToApprove() throws Exception {
-        mockMvc.perform(post("/api/workpapers/1/approve").with(csrf()))
+        mockMvc.perform(post("/api/workpapers/1/approve").with(csrf())
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(username = "assistant", roles = "AUDITOR")
     void shouldGetWorkpaperById() throws Exception {
-        when(workpaperService.findById(1L)).thenReturn(workpaper(1L, "WP-1", "DRAFT", "assistant"));
+        when(workpaperService.findById(1L, "TENANT-1", "PROJECT-1")).thenReturn(workpaper(1L, "WP-1", "DRAFT", "assistant"));
 
-        mockMvc.perform(get("/api/workpapers/1"))
+        mockMvc.perform(get("/api/workpapers/1")
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.title").value("WP-1"));
@@ -147,9 +166,11 @@ class WorkpaperReviewApiControllerTest {
     @Test
     @WithMockUser(username = "assistant", roles = "AUDITOR")
     void shouldReturnReviewActionHistory() throws Exception {
-        when(workpaperService.findReviewActions(1L)).thenReturn(List.of(reviewAction("assistant", ReviewActionType.START)));
+        when(workpaperService.findReviewActions(1L, "TENANT-1", "PROJECT-1")).thenReturn(List.of(reviewAction("assistant", ReviewActionType.START)));
 
-        mockMvc.perform(get("/api/workpapers/1/actions"))
+        mockMvc.perform(get("/api/workpapers/1/actions")
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].actor").value("assistant"))
                 .andExpect(jsonPath("$[0].action").value("START"));
@@ -157,7 +178,9 @@ class WorkpaperReviewApiControllerTest {
 
     @Test
     void unauthenticatedUserShouldBeDenied() throws Exception {
-        mockMvc.perform(get("/api/workpapers/1"))
+        mockMvc.perform(get("/api/workpapers/1")
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
                 .andExpect(status().isUnauthorized());
     }
 

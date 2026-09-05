@@ -29,9 +29,11 @@ class DashboardControllerTest {
     @Test
     @WithMockUser(username = "auditor", roles = "AUDITOR")
     void authorizedUserCanReadMetrics() throws Exception {
-        when(dashboardService.metrics()).thenReturn(metrics());
+        when(dashboardService.metrics("TENANT-1", "PROJECT-1")).thenReturn(metrics());
 
-        mockMvc.perform(get("/api/dashboard"))
+        mockMvc.perform(get("/api/dashboard")
+                .param("tenantId", "TENANT-1")
+                .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalBookings").value(12))
                 .andExpect(jsonPath("$.findingsByRisk.HIGH").value(2))
@@ -42,7 +44,9 @@ class DashboardControllerTest {
     @Test
     @WithMockUser(username = "user", roles = "USER")
     void nonAuditRoleCannotReadMetricsOrPage() throws Exception {
-        mockMvc.perform(get("/api/dashboard")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/dashboard")
+                .param("tenantId", "TENANT-1")
+                .param("projectId", "PROJECT-1")).andExpect(status().isForbidden());
         mockMvc.perform(get("/dashboard")).andExpect(status().isForbidden());
     }
 

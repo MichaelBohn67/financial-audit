@@ -39,7 +39,7 @@ class OpenBankingApiControllerTest {
         account.setIban("DE111");
         account.setCurrency("EUR");
 
-        when(accountRepository.findAll()).thenReturn(List.of(account));
+        when(accountRepository.findByAccountHolder_TenantId("TENANT-1")).thenReturn(List.of(account));
 
         mockMvc.perform(get("/open-banking/v1/accounts")
                 .param("tenantId", "TENANT-1"))
@@ -69,7 +69,7 @@ class OpenBankingApiControllerTest {
         other.setSourceAccount("DE333");
         other.setDestinationAccount("DE444");
 
-        when(bookingRepository.findAll()).thenReturn(List.of(matching, other));
+        when(bookingRepository.findByTenantIdAndProjectId("TENANT-1", "PROJECT-1")).thenReturn(List.of(matching, other));
 
         mockMvc.perform(get("/open-banking/v1/transactions")
                 .param("tenantId", "TENANT-1")

@@ -38,10 +38,12 @@ class FindingRemediationApiControllerTest {
         Finding finding = new Finding();
         finding.setId(1L);
         finding.setRemediationPlan("Implement control");
-        when(service.updatePlan(anyLong(), anyString(), anyString())).thenReturn(finding);
+        when(service.updatePlan(anyLong(), anyString(), anyString(), anyString(), anyString())).thenReturn(finding);
 
         mockMvc.perform(patch("/api/findings/1/remediation/plan")
                         .with(csrf())
+                        .param("tenantId", "TENANT_1")
+                        .param("projectId", "PROJECT_1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("plan", "Implement control"))))
                 .andExpect(status().isOk())
@@ -55,11 +57,13 @@ class FindingRemediationApiControllerTest {
         Finding finding = new Finding();
         finding.setId(1L);
         finding.setRemediationOwner("owner");
-        when(service.assign(anyLong(), anyString(), any(LocalDate.class), anyString()))
+        when(service.assign(anyLong(), anyString(), any(LocalDate.class), anyString(), anyString(), anyString()))
                 .thenReturn(finding);
 
         mockMvc.perform(post("/api/findings/1/remediation")
                         .with(csrf())
+                        .param("tenantId", "TENANT_1")
+                        .param("projectId", "PROJECT_1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of(
                                 "owner", "owner", "dueDate", "2026-09-01"))))
@@ -73,10 +77,12 @@ class FindingRemediationApiControllerTest {
     void auditorCanLinkWorkpaper() throws Exception {
         Finding finding = new Finding();
         finding.setId(1L);
-        when(service.linkWorkpaper(anyLong(), anyLong(), anyString())).thenReturn(finding);
+        when(service.linkWorkpaper(anyLong(), anyLong(), anyString(), anyString(), anyString())).thenReturn(finding);
 
         mockMvc.perform(post("/api/findings/1/workpaper/5")
-                        .with(csrf()))
+                        .with(csrf())
+                        .param("tenantId", "TENANT_1")
+                        .param("projectId", "PROJECT_1"))
                 .andExpect(status().isOk())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.id").value(1));
     }
@@ -88,10 +94,12 @@ class FindingRemediationApiControllerTest {
         finding.setId(1L);
         finding.setRemediationStatus("RESOLVED");
         finding.setResolutionComment("Issue fixed");
-        when(service.transition(anyLong(), anyString(), anyString(), anyString())).thenReturn(finding);
+        when(service.transition(anyLong(), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(finding);
 
         mockMvc.perform(patch("/api/findings/1/remediation")
                         .with(csrf())
+                        .param("tenantId", "TENANT_1")
+                        .param("projectId", "PROJECT_1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of(
                                 "status", "RESOLVED", "comment", "Issue fixed"))))
@@ -106,6 +114,8 @@ class FindingRemediationApiControllerTest {
     void nonAuditRoleCannotUpdateRemediation() throws Exception {
         mockMvc.perform(patch("/api/findings/1/remediation/plan")
                         .with(csrf())
+                        .param("tenantId", "TENANT_1")
+                        .param("projectId", "PROJECT_1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("plan", "Attempt"))))
                 .andExpect(status().isForbidden());

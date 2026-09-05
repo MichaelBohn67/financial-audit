@@ -37,3 +37,5 @@ databaseChangeLog:
       file: db/changelog/changes/028-scope-audit-events.yaml
   - include:
       file: db/changelog/changes/029-report-archives.yaml
+  - include:
+      file: db/changelog/changes/030-create-user-table.yaml

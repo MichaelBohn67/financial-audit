@@ -17,6 +17,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -114,15 +115,16 @@ class ReportApiControllerTest {
     void auditor_shouldStartRun() throws Exception {
         ReportRun run = reportRun(10L, "AML-Report", "1.0.0", ReportRunStatus.RUNNING);
         ReportRun completed = reportRun(10L, "AML-Report", "1.0.0", ReportRunStatus.COMPLETED);
-        when(reportService.startRun(anyString(), anyString(), anyString())).thenReturn(run);
-        when(reportExportService.assemble(10L)).thenReturn(emptyContent());
-        when(reportService.completeRun(anyLong(), anyString())).thenReturn(completed);
+        when(reportService.startRun(anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(run);
+        when(reportExportService.assemble(10L, "TENANT-1", "PROJECT-1")).thenReturn(emptyContent());
+        when(reportService.completeRun(anyLong(), anyString(), anyString(), anyString())).thenReturn(completed);
 
         mockMvc.perform(post("/api/reports/runs")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("templateName", "AML-Report", "parameters", "tenantId=T1"))))
+                                Map.of("templateName", "AML-Report", "parameters", "tenantId=T1",
+                                        "tenantId", "TENANT-1", "projectId", "PROJECT-1"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
     }
@@ -133,15 +135,16 @@ class ReportApiControllerTest {
         ReportRun running = reportRun(11L, "AML-Report", "1.0.0", ReportRunStatus.RUNNING);
         ReportRun failed = reportRun(11L, "AML-Report", "1.0.0", ReportRunStatus.FAILED);
         failed.setErrorMessage("export failed");
-        when(reportService.startRun(anyString(), anyString(), anyString())).thenReturn(running);
-        doThrow(new IllegalStateException("export failed")).when(reportExportService).assemble(11L);
-        when(reportService.failRun(11L, "export failed")).thenReturn(failed);
+        when(reportService.startRun(anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(running);
+        doThrow(new IllegalStateException("export failed")).when(reportExportService).assemble(11L, "TENANT-1", "PROJECT-1");
+        when(reportService.failRun(11L, "export failed", "TENANT-1", "PROJECT-1")).thenReturn(failed);
 
         mockMvc.perform(post("/api/reports/runs")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("templateName", "AML-Report", "parameters", ""))))
+                                Map.of("templateName", "AML-Report", "parameters", "",
+                                        "tenantId", "TENANT-1", "projectId", "PROJECT-1"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("FAILED"))
                 .andExpect(jsonPath("$.errorMessage").value("export failed"));
@@ -154,7 +157,8 @@ class ReportApiControllerTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("templateName", "AML-Report", "parameters", ""))))
+                                Map.of("templateName", "AML-Report", "parameters", "",
+                                        "tenantId", "TENANT-1", "projectId", "PROJECT-1"))))
                 .andExpect(status().isForbidden());
     }
 
@@ -163,10 +167,12 @@ class ReportApiControllerTest {
     @Test
     @WithMockUser(username = "auditor", roles = "AUDITOR")
     void auditor_shouldGetRunById() throws Exception {
-        when(reportService.findRunById(5L))
+        when(reportService.findRunById(5L, "TENANT-1", "PROJECT-1"))
                 .thenReturn(reportRun(5L, "AML-Report", "1.0.0", ReportRunStatus.COMPLETED));
 
-        mockMvc.perform(get("/api/reports/runs/5"))
+        mockMvc.perform(get("/api/reports/runs/5")
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
@@ -177,10 +183,13 @@ class ReportApiControllerTest {
     @Test
     @WithMockUser(username = "auditor", roles = "AUDITOR")
     void shouldListCompletedRuns() throws Exception {
-        when(reportService.findRunsByStatus(ReportRunStatus.COMPLETED))
+        when(reportService.findRunsByStatus(ReportRunStatus.COMPLETED, "TENANT-1", "PROJECT-1"))
                 .thenReturn(List.of(reportRun(1L, "AML-Report", "1.0.0", ReportRunStatus.COMPLETED)));
 
-        mockMvc.perform(get("/api/reports/runs").param("status", "COMPLETED"))
+        mockMvc.perform(get("/api/reports/runs")
+                        .param("status", "COMPLETED")
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].status").value("COMPLETED"));
     }
@@ -190,12 +199,31 @@ class ReportApiControllerTest {
     @Test
     @WithMockUser(username = "auditor", roles = "AUDITOR")
     void shouldExportReportContent() throws Exception {
-        when(reportExportService.assemble(3L)).thenReturn(emptyContent());
+        when(reportExportService.assemble(3L, "TENANT-1", "PROJECT-1")).thenReturn(emptyContent());
 
-        mockMvc.perform(get("/api/reports/runs/3/export"))
+        mockMvc.perform(get("/api/reports/runs/3/export")
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reportName").value("AML-Report"))
                 .andExpect(jsonPath("$.findingsSummary.totalFindings").value(0));
+    }
+
+    @Test
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
+    void shouldArchiveRun() throws Exception {
+        ReportExportService.ExportArtifact artifact = new ReportExportService.ExportArtifact(
+                1L, "/reports/3.pdf", "hash123", 1024L, LocalDateTime.now());
+        when(reportExportService.archive(3L, "TENANT-1", "PROJECT-1", "auditor")).thenReturn(artifact);
+
+        mockMvc.perform(post("/api/reports/runs/3/archive")
+                        .with(csrf())
+                        .param("tenantId", "TENANT-1")
+                        .param("projectId", "PROJECT-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.archiveId").value(1))
+                .andExpect(jsonPath("$.storagePath").value("/reports/3.pdf"))
+                .andExpect(jsonPath("$.sha256").value("hash123"));
     }
 
     @Test

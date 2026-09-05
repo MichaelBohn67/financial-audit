@@ -172,4 +172,48 @@ class WorkpaperServiceTest {
         List<ReviewAction> actions = service.findReviewActions(20L);
         assertThat(actions).containsExactly(a1, a2);
     }
+
+    @Test
+    void shouldCreateAndTransitionScopedWorkpaper() {
+        when(workpaperRepository.save(any(Workpaper.class))).thenAnswer(invocation -> {
+            Workpaper wp = invocation.getArgument(0);
+            if (wp.getId() == null) wp.setId(30L);
+            return wp;
+        });
+
+        assertThatThrownBy(() -> service.create("Title", "", "PROJ", "user"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.create("Title", "TENANT", null, "user"))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        Workpaper created = service.create("Scoped Title", "TENANT-1", "PROJECT-1", "user1");
+        assertThat(created.getId()).isEqualTo(30L);
+        assertThat(created.getTenantId()).isEqualTo("TENANT-1");
+        assertThat(created.getScopeProjectId()).isEqualTo("PROJECT-1");
+
+        when(workpaperRepository.findByIdAndTenantIdAndScopeProjectId(30L, "TENANT-1", "PROJECT-1"))
+                .thenReturn(Optional.of(created));
+
+        Workpaper inProgress = service.startProgress(30L, "TENANT-1", "PROJECT-1", "user1");
+        assertThat(inProgress.getStatus()).isEqualTo("IN_PROGRESS");
+
+        Workpaper submitted = service.submit(30L, "TENANT-1", "PROJECT-1", "user1");
+        assertThat(submitted.getStatus()).isEqualTo("SUBMITTED");
+
+        Workpaper changes = service.requestChanges(30L, "TENANT-1", "PROJECT-1", "senior", "Fix");
+        assertThat(changes.getStatus()).isEqualTo("CHANGES_REQUESTED");
+
+        service.startProgress(30L, "TENANT-1", "PROJECT-1", "user1");
+        service.submit(30L, "TENANT-1", "PROJECT-1", "user1");
+        Workpaper approved = service.approve(30L, "TENANT-1", "PROJECT-1", "lead");
+        assertThat(approved.getStatus()).isEqualTo("APPROVED");
+
+        Workpaper signedOff = service.signOff(30L, "TENANT-1", "PROJECT-1", "lead");
+        assertThat(signedOff.getStatus()).isEqualTo("SIGNED_OFF");
+
+        assertThat(service.findById(30L, "TENANT-1", "PROJECT-1")).isSameAs(created);
+        ReviewAction action = new ReviewAction();
+        when(reviewActionRepository.findByWorkpaper(created)).thenReturn(List.of(action));
+        assertThat(service.findReviewActions(30L, "TENANT-1", "PROJECT-1")).containsExactly(action);
+    }
 }

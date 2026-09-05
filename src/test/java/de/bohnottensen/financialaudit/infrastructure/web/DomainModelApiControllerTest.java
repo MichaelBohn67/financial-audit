@@ -54,7 +54,7 @@ class DomainModelApiControllerTest {
         booking.setDestinationAccount("DE222");
         booking.setTransactionTimestamp(LocalDateTime.now());
 
-        when(bookingRepository.findAll()).thenReturn(List.of(booking));
+        when(bookingRepository.findByTenantIdAndProjectId("TENANT_1", "PROJECT_1")).thenReturn(List.of(booking));
 
         mockMvc.perform(get("/api/bookings")
                         .param("tenantId", "TENANT_1")
@@ -81,7 +81,7 @@ class DomainModelApiControllerTest {
         holder.setCompany(false);
         holder.setNationality("DE");
 
-        when(accountHolderRepository.findAll()).thenReturn(List.of(holder));
+        when(accountHolderRepository.findByTenantId("TENANT_1")).thenReturn(List.of(holder));
 
         mockMvc.perform(get("/api/account-holders")
                         .param("tenantId", "TENANT_1"))
@@ -106,7 +106,7 @@ class DomainModelApiControllerTest {
         account.setCurrency("EUR");
         account.setAccountHolder(holder);
 
-        when(accountRepository.findAll()).thenReturn(List.of(account));
+        when(accountRepository.findByAccountHolder_TenantId("TENANT_1")).thenReturn(List.of(account));
 
         mockMvc.perform(get("/api/accounts")
                         .param("tenantId", "TENANT_1"))
@@ -133,7 +133,7 @@ class DomainModelApiControllerTest {
         address.setValidFrom(LocalDate.of(2020, 1, 1));
         address.setValidTo(LocalDate.of(2030, 12, 31));
 
-        when(addressRepository.findAll()).thenReturn(List.of(address));
+        when(addressRepository.findByAccountHolder_TenantId("TENANT_1")).thenReturn(List.of(address));
 
         mockMvc.perform(get("/api/addresses")
                         .param("tenantId", "TENANT_1"))
@@ -164,7 +164,7 @@ class DomainModelApiControllerTest {
         finding.setRunContext("AUDIT-2026");
         finding.setAuditorComment("Follow up required");
 
-        when(findingRepository.findAll()).thenReturn(List.of(finding));
+        when(findingRepository.findByBooking_TenantIdAndBooking_ProjectId("TENANT_1", "PROJECT_1")).thenReturn(List.of(finding));
 
         mockMvc.perform(get("/api/findings")
                         .param("tenantId", "TENANT_1")

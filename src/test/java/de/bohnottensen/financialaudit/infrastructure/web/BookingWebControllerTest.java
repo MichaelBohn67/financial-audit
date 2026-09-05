@@ -53,7 +53,7 @@ class BookingWebControllerTest {
         booking.setAmount(new BigDecimal("100.00"));
         booking.setCurrency("EUR");
 
-        when(bookingRepository.findAll()).thenReturn(List.of(booking));
+        when(bookingRepository.findByTenantIdAndProjectId("TENANT-1", "PROJECT-1")).thenReturn(List.of(booking));
 
         mockMvc.perform(get("/bookings")
                 .param("tenantId", "TENANT-1")
@@ -149,7 +149,7 @@ class BookingWebControllerTest {
         updated.setDescription("Updated Description");
         updated.setAmount(new BigDecimal("200.00"));
 
-        when(bookingRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(bookingRepository.findByIdAndTenantIdAndProjectId(1L, "TENANT-1", "PROJECT-1")).thenReturn(Optional.of(existing));
         when(bookingRepository.save(any(Booking.class))).thenReturn(updated);
 
         mockMvc.perform(post("/bookings/1").with(csrf())
@@ -187,7 +187,7 @@ class BookingWebControllerTest {
         booking.setId(1L);
         booking.setDescription("Edit Me");
 
-        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdAndTenantIdAndProjectId(1L, "TENANT-1", "PROJECT-1")).thenReturn(Optional.of(booking));
 
         mockMvc.perform(get("/bookings/1/edit")
                 .param("tenantId", "TENANT-1")

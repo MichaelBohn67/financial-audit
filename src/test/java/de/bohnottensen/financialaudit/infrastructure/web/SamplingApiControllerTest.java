@@ -41,12 +41,12 @@ class SamplingApiControllerTest {
     @WithMockUser(username = "auditor", roles = "AUDITOR")
     void authorizedUserCanCreateMusRun() throws Exception {
         SamplingRun run = run(10L);
-        when(samplingService.generateMusSample("Q1", 100, 5, 42)).thenReturn(run);
+        when(samplingService.generateMusSample("Q1", 100, 5, 42, "TENANT-1", "PROJECT-1")).thenReturn(run);
 
         mockMvc.perform(post("/api/sampling/mus").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("runName", "Q1", "populationSize", 100, "sampleSize", 5, "seed", 42))))
+                                Map.of("runName", "Q1", "populationSize", 100, "sampleSize", 5, "seed", 42, "tenantId", "TENANT-1", "projectId", "PROJECT-1"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.samplingStrategy").value("MUS"));
@@ -58,23 +58,27 @@ class SamplingApiControllerTest {
         mockMvc.perform(post("/api/sampling/mus").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("runName", "Q1", "populationSize", 100, "sampleSize", 0, "seed", 42))))
+                                Map.of("runName", "Q1", "populationSize", 100, "sampleSize", 0, "seed", 42, "tenantId", "TENANT-1", "projectId", "PROJECT-1"))))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @WithMockUser(username = "user", roles = "USER")
     void nonAuditRoleCannotUseSamplingApi() throws Exception {
-        mockMvc.perform(get("/api/sampling/runs")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/sampling/runs")
+                .param("tenantId", "TENANT-1")
+                .param("projectId", "PROJECT-1")).andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(username = "auditor", roles = "AUDITOR")
     void canReadRunItems() throws Exception {
-        when(samplingRuns.existsById(10L)).thenReturn(true);
+        when(samplingRuns.findByIdAndTenantIdAndProjectId(10L, "TENANT-1", "PROJECT-1")).thenReturn(Optional.of(run(10L)));
         when(samplingItems.findBySamplingRunIdOrderBySampleUnitIndex(10L)).thenReturn(List.of(new SamplingRunItem()));
 
-        mockMvc.perform(get("/api/sampling/runs/10/items"))
+        mockMvc.perform(get("/api/sampling/runs/10/items")
+                .param("tenantId", "TENANT-1")
+                .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0]").exists());
     }
@@ -82,9 +86,11 @@ class SamplingApiControllerTest {
     @Test
     @WithMockUser(username = "auditor", roles = "AUDITOR")
     void canListRuns() throws Exception {
-        when(samplingRuns.findAll()).thenReturn(List.of(run(10L)));
+        when(samplingRuns.findByTenantIdAndProjectIdOrderByCreatedAtDesc("TENANT-1", "PROJECT-1")).thenReturn(List.of(run(10L)));
 
-        mockMvc.perform(get("/api/sampling/runs"))
+        mockMvc.perform(get("/api/sampling/runs")
+                .param("tenantId", "TENANT-1")
+                .param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(10));
     }
@@ -92,22 +98,24 @@ class SamplingApiControllerTest {
     @Test
     @WithMockUser(username = "auditor", roles = "AUDITOR")
     void readingItemsForNonExistentRunReturnsNotFound() throws Exception {
-        when(samplingRuns.existsById(999L)).thenReturn(false);
+        when(samplingRuns.findByIdAndTenantIdAndProjectId(999L, "TENANT-1", "PROJECT-1")).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/sampling/runs/999/items"))
+        mockMvc.perform(get("/api/sampling/runs/999/items")
+                .param("tenantId", "TENANT-1")
+                .param("projectId", "PROJECT-1"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @WithMockUser(username = "auditor", roles = "AUDITOR")
     void exceptionHandlerReturnsBadRequestOnIllegalArgumentException() throws Exception {
-        when(samplingService.generateMusSample("Q1", 100, 5, 42))
+        when(samplingService.generateMusSample("Q1", 100, 5, 42, "TENANT-1", "PROJECT-1"))
                 .thenThrow(new IllegalArgumentException("Sample size exceeds population"));
 
         mockMvc.perform(post("/api/sampling/mus").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("runName", "Q1", "populationSize", 100, "sampleSize", 5, "seed", 42))))
+                                Map.of("runName", "Q1", "populationSize", 100, "sampleSize", 5, "seed", 42, "tenantId", "TENANT-1", "projectId", "PROJECT-1"))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Sample size exceeds population"));
     }

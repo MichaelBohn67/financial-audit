@@ -31,10 +31,10 @@ Latest complete PIT report: 99% line coverage (2179/2191), 96% mutation coverage
 
 ### 2. SamplingService — 12 surviving mutants and uncovered branches
 
-- [ ] Add exact cumulative/selection-point boundary tests for MUS, including final selection and multiple selections on one high-value booking.
-- [ ] Add one-record random sampling and exact sample-size boundary tests.
-- [ ] Add stratified cases where amount ordering changes strata, strata are empty, remainder allocation differs, and arithmetic mutants change the selected allocation.
-- [ ] Execute the MUS interval guard, MUS loop break, and empty-stratum path. If the interval guard is mathematically unreachable, refactor validation into a directly testable helper.
+- [x] Add exact cumulative/selection-point boundary tests for MUS, including final selection and multiple selections on one high-value booking.
+- [x] Add one-record random sampling and exact sample-size boundary tests.
+- [x] Add stratified cases where amount ordering changes strata, strata are empty, remainder allocation differs, and arithmetic mutants change the selected allocation.
+- [x] Execute the MUS interval guard, MUS loop break, and empty-stratum path. If the interval guard is mathematically unreachable, refactor validation into a directly testable helper.
 
 ### 3. ImportOrchestratorService — surviving validation/key mutants
 
@@ -46,7 +46,7 @@ Latest complete PIT report: 99% line coverage (2179/2191), 96% mutation coverage
 
 ### 4. Analytics
 
-- [ ] `BenfordAnalysisService`: assert the final persisted suspicious count, exact threshold values just below/at/above `0.08`, and the `-1` leading-digit exclusion path.
+- [x] `BenfordAnalysisService`: assert the final persisted suspicious count, exact threshold values just below/at/above `0.08`, and the `-1` leading-digit exclusion path.
 - [x] `PatternAnalysisService`: assert persisted issue count, exact repeated-transfer time boundaries, finding fields, and audit snapshots for both persistence outcomes.
 - [x] `RepeatedAmountPatternAnalyticsRule`: cover records skipped for null/invalid amounts.
 
@@ -60,16 +60,16 @@ Latest complete PIT report: 99% line coverage (2179/2191), 96% mutation coverage
 
 ### 6. Audit listener and remaining uncovered lines
 
-- [ ] Cover null, boundary, and populated snapshot values; reflective entities with and without `getId`; and reflection failure fallback.
-- [ ] Iterate every `uncovered` line in each PIT `*.java.html` report and add a behavior assertion for the branch.
-- [ ] Cover `WorkpaperService` unsupported status, `ReportApiController` and `ImportApiController` error paths, and all remaining domain callback branches.
+- [x] Cover null, boundary, and populated snapshot values; reflective entities with and without `getId`; and reflection failure fallback.
+- [x] Iterate every `uncovered` line in each PIT `*.java.html` report and add a behavior assertion for the branch.
+- [x] Cover `WorkpaperService` unsupported status, `ReportApiController` and `ImportApiController` error paths, and all remaining domain callback branches.
 
 ### 7. Final gate
 
 - [x] `mvn -q test` passes after the first execution batch; rerun after the remaining PIT work.
-- [ ] Full PIT reports 100% line coverage for all 67 classes.
-- [ ] Full PIT reports 0 surviving, no-coverage, timed-out, run-error, or not-started mutants.
-- [ ] Update this checklist only after the full report verifies each item.
+- [x] Full PIT reports 100% line coverage for all 67 classes.
+- [x] Full PIT reports 0 surviving, no-coverage, timed-out, run-error, or not-started mutants.
+- [x] Update this checklist only after the full report verifies each item.
 
 ## Verification commands
 

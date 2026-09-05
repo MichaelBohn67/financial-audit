@@ -625,6 +625,170 @@ class SamplingServiceTest {
                 .hasMessageContaining("sampleSize must be <= effective population size");
     }
 
+    @Test
+    void shouldRejectMusWhenIntervalRoundsToZero() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
+        SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
+
+        when(bookingRepository.findAll()).thenReturn(List.of(booking(1L, "0.0000001")));
+        SamplingService service = new SamplingService(bookingRepository, runRepository, runItemRepository);
+
+        assertThatThrownBy(() -> service.generateMusSample("zero-interval", 1, 1, 42L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Sampling interval must be > 0");
+    }
+
+    @Test
+    void shouldBreakMusLoopEarlyWhenSampleSizeReached() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
+        SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
+
+        when(bookingRepository.findAll()).thenReturn(List.of(
+                booking(1L, "100.00"),
+                booking(2L, "100.00"),
+                booking(3L, "100.00"),
+                booking(4L, "100.00")
+        ));
+        when(runRepository.save(any(SamplingRun.class))).thenAnswer(invocation -> {
+            SamplingRun run = invocation.getArgument(0);
+            run.setId(99L);
+            return run;
+        });
+        List<SamplingRunItem> items = new ArrayList<>();
+        when(runItemRepository.save(any(SamplingRunItem.class))).thenAnswer(invocation -> {
+            SamplingRunItem item = invocation.getArgument(0);
+            items.add(item);
+            return item;
+        });
+
+        SamplingService service = new SamplingService(bookingRepository, runRepository, runItemRepository);
+        SamplingRun run = service.generateMusSample("early-break", 4, 1, 0L);
+
+        assertThat(run).isNotNull();
+        assertThat(items).hasSize(1);
+        assertThat(items.get(0).getBookingId()).isEqualTo(3L);
+    }
+
+    @Test
+    void shouldSaveTenantAndProjectScopesCorrectlyInSamplingRuns() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
+        SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
+
+        when(bookingRepository.findByTenantIdAndProjectId("TENANT-A", "PROJECT-A")).thenReturn(List.of(
+                booking(1L, "100.00"), booking(2L, "200.00")
+        ));
+        when(bookingRepository.findAll()).thenReturn(List.of(
+                booking(1L, "100.00"), booking(2L, "200.00"), booking(3L, "300.00")
+        ));
+        when(runRepository.save(any(SamplingRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        SamplingService service = new SamplingService(bookingRepository, runRepository, runItemRepository);
+
+        // MUS scoped
+        SamplingRun musScoped = service.generateMusSample("mus-s", 2, 1, 1L, "TENANT-A", "PROJECT-A");
+        assertThat(musScoped.getTenantId()).isEqualTo("TENANT-A");
+        assertThat(musScoped.getProjectId()).isEqualTo("PROJECT-A");
+        assertThat(musScoped.getPopulationSize()).isEqualTo(2L);
+
+        // MUS legacy (both null)
+        SamplingRun musLegacy = service.generateMusSample("mus-l", 3, 1, 1L);
+        assertThat(musLegacy.getTenantId()).isEqualTo("LEGACY");
+        assertThat(musLegacy.getProjectId()).isEqualTo("LEGACY");
+        assertThat(musLegacy.getPopulationSize()).isEqualTo(3L);
+
+        // MUS mixed nulls
+        SamplingRun musNullTenant = service.generateMusSample("mus-nt", 3, 1, 1L, null, "PROJECT-A");
+        assertThat(musNullTenant.getTenantId()).isEqualTo("LEGACY");
+        assertThat(musNullTenant.getProjectId()).isEqualTo("PROJECT-A");
+        assertThat(musNullTenant.getPopulationSize()).isEqualTo(3L);
+
+        SamplingRun musNullProject = service.generateMusSample("mus-np", 3, 1, 1L, "TENANT-A", null);
+        assertThat(musNullProject.getTenantId()).isEqualTo("TENANT-A");
+        assertThat(musNullProject.getProjectId()).isEqualTo("LEGACY");
+        assertThat(musNullProject.getPopulationSize()).isEqualTo(3L);
+
+        // Random scoped
+        SamplingRun randomScoped = service.generateRandomSample("rnd-s", 2, 1, 1L, "TENANT-A", "PROJECT-A");
+        assertThat(randomScoped.getTenantId()).isEqualTo("TENANT-A");
+        assertThat(randomScoped.getProjectId()).isEqualTo("PROJECT-A");
+        assertThat(randomScoped.getPopulationSize()).isEqualTo(2L);
+
+        // Random legacy
+        SamplingRun randomLegacy = service.generateRandomSample("rnd-l", 3, 1, 1L);
+        assertThat(randomLegacy.getTenantId()).isEqualTo("LEGACY");
+        assertThat(randomLegacy.getProjectId()).isEqualTo("LEGACY");
+        assertThat(randomLegacy.getPopulationSize()).isEqualTo(3L);
+
+        // Stratified scoped
+        SamplingRun stratScoped = service.generateStratifiedSample("strat-s", 2, 1, 1L, 1, "TENANT-A", "PROJECT-A");
+        assertThat(stratScoped.getTenantId()).isEqualTo("TENANT-A");
+        assertThat(stratScoped.getProjectId()).isEqualTo("PROJECT-A");
+        assertThat(stratScoped.getPopulationSize()).isEqualTo(2L);
+
+        // Stratified legacy
+        SamplingRun stratLegacy = service.generateStratifiedSample("strat-l", 3, 1, 1L, 1);
+        assertThat(stratLegacy.getTenantId()).isEqualTo("LEGACY");
+        assertThat(stratLegacy.getProjectId()).isEqualTo("LEGACY");
+        assertThat(stratLegacy.getPopulationSize()).isEqualTo(3L);
+    }
+
+    @Test
+    void shouldHandleOneRecordRandomSampleAndBoundaries() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
+        SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
+
+        when(bookingRepository.findAll()).thenReturn(List.of(booking(1L, "50.00")));
+        when(runRepository.save(any(SamplingRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        List<SamplingRunItem> items = new ArrayList<>();
+        when(runItemRepository.save(any(SamplingRunItem.class))).thenAnswer(invocation -> {
+            SamplingRunItem item = invocation.getArgument(0);
+            items.add(item);
+            return item;
+        });
+
+        SamplingService service = new SamplingService(bookingRepository, runRepository, runItemRepository);
+        SamplingRun run = service.generateRandomSample("single-record", 1, 1, 42L);
+
+        assertThat(run.getPopulationSize()).isEqualTo(1L);
+        assertThat(run.getSampleSize()).isEqualTo(1L);
+        assertThat(items).hasSize(1);
+        assertThat(items.get(0).getBookingId()).isEqualTo(1L);
+        assertThat(items.get(0).getSampleUnitIndex()).isEqualTo(0);
+    }
+
+    @Test
+    void shouldHandleStratifiedSamplingWithEmptyStrataAndRemainderAllocations() {
+        BookingRepository bookingRepository = mock(BookingRepository.class);
+        SamplingRunRepository runRepository = mock(SamplingRunRepository.class);
+        SamplingRunItemRepository runItemRepository = mock(SamplingRunItemRepository.class);
+
+        when(bookingRepository.findAll()).thenReturn(List.of(
+                booking(1L, "10.00"),
+                booking(2L, "100.00")
+        ));
+        when(runRepository.save(any(SamplingRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        List<SamplingRunItem> items = new ArrayList<>();
+        when(runItemRepository.save(any(SamplingRunItem.class))).thenAnswer(invocation -> {
+            SamplingRunItem item = invocation.getArgument(0);
+            items.add(item);
+            return item;
+        });
+
+        SamplingService service = new SamplingService(bookingRepository, runRepository, runItemRepository);
+        // 2 bookings, 5 strata: some strata are empty
+        SamplingRun run = service.generateStratifiedSample("empty-strata", 2, 2, 10L, 5);
+
+        assertThat(run.getPopulationSize()).isEqualTo(2L);
+        assertThat(run.getSampleSize()).isEqualTo(2L);
+        assertThat(items).hasSize(2);
+    }
+
     private Booking booking(Long id, String amount) {
         Booking booking = new Booking();
         booking.setId(id);

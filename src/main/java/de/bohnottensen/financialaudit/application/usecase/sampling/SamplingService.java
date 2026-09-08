@@ -7,6 +7,7 @@ import de.bohnottensen.financialaudit.infrastructure.persistence.BookingReposito
 import de.bohnottensen.financialaudit.infrastructure.persistence.SamplingRunItemRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.SamplingRunRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -19,6 +20,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class SamplingService {
 
     private static final BigDecimal ZERO = BigDecimal.ZERO;

@@ -3,8 +3,10 @@ package de.bohnottensen.financialaudit.application.usecase.audit;
 import de.bohnottensen.financialaudit.domain.model.AuditEvent;
 import de.bohnottensen.financialaudit.infrastructure.persistence.AuditEventRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class AuditTrailWriter {
 
     private final AuditEventRepository auditEventRepository;

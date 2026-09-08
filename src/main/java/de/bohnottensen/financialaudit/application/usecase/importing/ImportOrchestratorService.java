@@ -9,6 +9,7 @@ import de.bohnottensen.financialaudit.infrastructure.persistence.BookingReposito
 import de.bohnottensen.financialaudit.infrastructure.persistence.ImportJobProtocolEntryRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.ImportJobRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.charset.StandardCharsets;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class ImportOrchestratorService {
 
     private final List<TransactionSourcePort> sources;

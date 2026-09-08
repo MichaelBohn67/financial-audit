@@ -9,12 +9,14 @@ import de.bohnottensen.financialaudit.infrastructure.persistence.ReviewActionRep
 import de.bohnottensen.financialaudit.infrastructure.persistence.WorkpaperRepository;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
 @Service
+@Transactional
 public class WorkpaperService {
 
     private final WorkpaperRepository workpaperRepository;

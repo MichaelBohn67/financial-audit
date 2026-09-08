@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 @AutoConfigureMockMvc
 class DashboardControllerTest {
     @Autowired MockMvc mockMvc;
-    @MockBean DashboardService dashboardService;
+    @MockitoBean DashboardService dashboardService;
 
     @Test
     @WithMockUser(username = "auditor", roles = "AUDITOR")

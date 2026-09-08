@@ -27,9 +27,10 @@ public class OperationalReadinessHealthIndicator implements HealthIndicator {
             try (var connection = dataSource.getConnection()) {
                 if (!connection.isValid(2)) return Health.down().withDetail("database", "not-ready").build();
             }
+            Path parent = archiveDirectory.getParent();
             boolean writable = Files.exists(archiveDirectory)
                     ? Files.isWritable(archiveDirectory)
-                    : Files.isWritable(archiveDirectory.getParent());
+                    : (parent != null && Files.isWritable(parent));
             if (!writable) return Health.down().withDetail("archiveStorage", "not-writable").build();
             return Health.up().withDetail("archiveStorage", "writable").build();
         } catch (Exception exception) {

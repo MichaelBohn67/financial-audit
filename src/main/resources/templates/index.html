@@ -1,18 +1,159 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Audit</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 25px; background: #f8f9fa; color: #2c3e50; }
+        .container { max-width: 1200px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+        h1 { margin-top: 0; color: #1a252f; border-bottom: 2px solid #eaecef; padding-bottom: 12px; }
+        h2 { margin-top: 28px; margin-bottom: 12px; color: #2c3e50; font-size: 1.3rem; border-bottom: 1px solid #edf2f7; padding-bottom: 6px; }
+        p.subtitle { color: #586069; font-size: 1rem; margin-bottom: 20px; }
+        .section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 25px; }
+        .view-card { background: #fdfdfd; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s ease; }
+        .view-card:hover { border-color: #3498db; box-shadow: 0 4px 10px rgba(52, 152, 219, 0.15); transform: translateY(-1px); }
+        .view-card-title { font-weight: 600; font-size: 1.05rem; margin-bottom: 6px; color: #2b6cb0; }
+        .view-card-desc { font-size: 0.85rem; color: #64748b; margin-bottom: 12px; flex-grow: 1; }
+        .btn-link { display: inline-block; padding: 6px 12px; font-size: 0.85rem; font-weight: 500; border-radius: 4px; text-decoration: none; text-align: center; background: #3182ce; color: #fff; }
+        .btn-link:hover { background: #2b6cb0; }
+        .btn-outline { background: transparent; color: #3182ce; border: 1px solid #3182ce; margin-left: 6px; }
+        .btn-outline:hover { background: #ebf8ff; }
+        .btn-group { display: flex; gap: 6px; }
+        .crud-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 15px; }
+        .crud-item { border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px 14px; background: #fafafa; display: flex; justify-content: space-between; align-items: center; text-decoration: none; color: #2d3748; font-weight: 500; font-size: 0.9rem; transition: background 0.15s; }
+        .crud-item:hover { background: #edf2f7; color: #3182ce; border-color: #cbd5e1; }
+        .crud-badge { font-size: 0.75rem; color: #718096; background: #edf2f7; padding: 2px 6px; border-radius: 10px; }
+        ul.nav-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+        ul.nav-list li a { display: block; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; text-decoration: none; color: #2b6cb0; font-weight: 500; }
+        ul.nav-list li a:hover { background: #ebf8ff; border-color: #3182ce; }
+        .search-box { width: 100%; max-width: 350px; padding: 8px 12px; font-size: 0.95rem; border: 1px solid #cbd5e1; border-radius: 4px; margin-bottom: 12px; }
+    </style>
 </head>
 <body>
-<h1>Financial Audit</h1>
-<p>Application is running.</p>
-<ul>
-    <li><a href="/bookings?tenantId=TENANT-1&amp;projectId=PROJECT-1">Bookings</a></li>
-    <li><a href="/bookings/new?tenantId=TENANT-1&amp;projectId=PROJECT-1&amp;documentId=DOC-1">Create booking</a></li>
-    <li><a href="/api/bookings?tenantId=TENANT-1&amp;projectId=PROJECT-1">Bookings API</a></li>
-    <li><a href="/dashboard">Audit dashboard</a></li>
-</ul>
+<div class="container">
+    <h1>Financial Audit</h1>
+    <p class="subtitle">Central navigation for financial audit dashboards, analytical tools, booking management, and domain model CRUD views.</p>
+
+    <h2>Primary Application Views</h2>
+    <div class="section-grid">
+        <div class="view-card">
+            <div>
+                <div class="view-card-title">Audit Dashboard</div>
+                <div class="view-card-desc">Overview of audit metrics, risk distribution, remediation tracking, and recent audit events.</div>
+            </div>
+            <div>
+                <a href="/dashboard" class="btn-link">Open Dashboard</a>
+            </div>
+        </div>
+        <div class="view-card">
+            <div>
+                <div class="view-card-title">Monetary Unit Sampling (MUS)</div>
+                <div class="view-card-desc">Statistical audit sampling tool to generate and inspect MUS sample selections.</div>
+            </div>
+            <div>
+                <a href="/sampling" class="btn-link">Open Sampling Tool</a>
+            </div>
+        </div>
+        <div class="view-card">
+            <div>
+                <div class="view-card-title">Bookings List</div>
+                <div class="view-card-desc">Browse, filter, and review project bookings with audit trail tracking.</div>
+            </div>
+            <div>
+                <a href="/bookings?tenantId=TENANT-1&amp;projectId=PROJECT-1" class="btn-link">View Bookings</a>
+            </div>
+        </div>
+        <div class="view-card">
+            <div>
+                <div class="view-card-title">Create Booking</div>
+                <div class="view-card-desc">Create a new booking transaction with tenant and project binding.</div>
+            </div>
+            <div>
+                <a href="/bookings/new?tenantId=TENANT-1&amp;projectId=PROJECT-1&amp;documentId=DOC-1" class="btn-link">New Booking</a>
+            </div>
+        </div>
+        <div class="view-card">
+            <div>
+                <div class="view-card-title">Domain Model CRUD Hub</div>
+                <div class="view-card-desc">Comprehensive administrative hub for managing all 32 domain entities.</div>
+            </div>
+            <div>
+                <a href="/crud" class="btn-link">Open CRUD Hub</a>
+            </div>
+        </div>
+    </div>
+
+    <h2>Domain Model CRUD Views</h2>
+    <p class="view-card-desc">Direct links to manage individual entity models in <code>domain.model</code>:</p>
+    <input type="text" id="modelFilter" class="search-box" placeholder="Filter domain model views..." onkeyup="filterModels()">
+
+    <div class="crud-grid" id="crudModelsGrid">
+        <!-- If rendered dynamically via Thymeleaf -->
+        <a th:each="m : ${crudModels}" th:href="@{/crud/{slug}(slug=${m.slug})}" class="crud-item model-link" th:attr="data-title=${m.title.toLowerCase()}">
+            <span th:text="${m.title}">Model Name</span>
+            <span class="crud-badge">&rarr;</span>
+        </a>
+
+        <!-- Fallback static links if models not injected in template context -->
+        <th:block th:if="${crudModels == null or #lists.isEmpty(crudModels)}">
+            <a href="/crud/account" class="crud-item model-link" data-title="account"><span>Account</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/account-holder" class="crud-item model-link" data-title="account holder"><span>Account Holder</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/address" class="crud-item model-link" data-title="address"><span>Address</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/audit-engagement" class="crud-item model-link" data-title="audit engagement"><span>Audit Engagement</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/audit-event" class="crud-item model-link" data-title="audit event"><span>Audit Event</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/audit-procedure" class="crud-item model-link" data-title="audit procedure"><span>Audit Procedure</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/audit-project" class="crud-item model-link" data-title="audit project"><span>Audit Project</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/audit-risk" class="crud-item model-link" data-title="audit risk"><span>Audit Risk</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/benford-analysis-run" class="crud-item model-link" data-title="benford analysis run"><span>Benford Analysis Run</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/benford-digit-stat" class="crud-item model-link" data-title="benford digit stat"><span>Benford Digit Stat</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/booking" class="crud-item model-link" data-title="booking"><span>Booking</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/finding" class="crud-item model-link" data-title="finding"><span>Finding</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/import-job" class="crud-item model-link" data-title="import job"><span>Import Job</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/import-job-protocol-entry" class="crud-item model-link" data-title="import job protocol entry"><span>Import Job Protocol Entry</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/materiality-config" class="crud-item model-link" data-title="materiality config"><span>Materiality Config</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/pattern-analysis-issue" class="crud-item model-link" data-title="pattern analysis issue"><span>Pattern Analysis Issue</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/pattern-analysis-run" class="crud-item model-link" data-title="pattern analysis run"><span>Pattern Analysis Run</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/permission" class="crud-item model-link" data-title="permission"><span>Permission</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/project-membership" class="crud-item model-link" data-title="project membership"><span>Project Membership</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/report-archive" class="crud-item model-link" data-title="report archive"><span>Report Archive</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/report-run" class="crud-item model-link" data-title="report run"><span>Report Run</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/report-template" class="crud-item model-link" data-title="report template"><span>Report Template</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/review-action" class="crud-item model-link" data-title="review action"><span>Review Action</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/role" class="crud-item model-link" data-title="role"><span>Role</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/role-permission" class="crud-item model-link" data-title="role permission"><span>Role Permission</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/sampling-run" class="crud-item model-link" data-title="sampling run"><span>Sampling Run</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/sampling-run-item" class="crud-item model-link" data-title="sampling run item"><span>Sampling Run Item</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/tenant" class="crud-item model-link" data-title="tenant"><span>Tenant</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/user" class="crud-item model-link" data-title="user"><span>User</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/user-role" class="crud-item model-link" data-title="user role"><span>User Role</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/workpaper" class="crud-item model-link" data-title="workpaper"><span>Workpaper</span><span class="crud-badge">&rarr;</span></a>
+            <a href="/crud/workpaper-evidence" class="crud-item model-link" data-title="workpaper evidence"><span>Workpaper Evidence</span><span class="crud-badge">&rarr;</span></a>
+        </th:block>
+    </div>
+
+    <h2>API Endpoints</h2>
+    <ul class="nav-list">
+        <li><a href="/api/bookings?tenantId=TENANT-1&amp;projectId=PROJECT-1">Bookings API (/api/bookings)</a></li>
+        <li><a href="/api/dashboard">Dashboard API (/api/dashboard)</a></li>
+        <li><a href="/api/sampling/runs">Sampling Runs API (/api/sampling/runs)</a></li>
+        <li><a href="/api/audit-trail">Audit Trail API (/api/audit-trail)</a></li>
+    </ul>
+</div>
+
+<script>
+function filterModels() {
+    const input = document.getElementById('modelFilter').value.toLowerCase();
+    const links = document.getElementsByClassName('model-link');
+    for (let i = 0; i < links.length; i++) {
+        const title = links[i].getAttribute('data-title') || links[i].textContent.toLowerCase();
+        if (title.includes(input)) {
+            links[i].style.display = "";
+        } else {
+            links[i].style.display = "none";
+        }
+    }
+}
+</script>
 </body>
 </html>

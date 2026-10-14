@@ -24,6 +24,7 @@ public class SecurityConfig {
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/bookings/**").authenticated()
+                        .requestMatchers("/crud/**").authenticated()
                         .requestMatchers("/dashboard").authenticated()
                         .requestMatchers("/sampling").authenticated()
                         .requestMatchers("/api/**", "/open-banking/**").authenticated()

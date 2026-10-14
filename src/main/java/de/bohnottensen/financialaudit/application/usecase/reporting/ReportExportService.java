@@ -63,27 +63,12 @@ public class ReportExportService {
 
     /**
      * Assemble full report content for a given run.
-     * The run must exist; its header fields are used as the report metadata.
+     * The run must exist inside the given scope; its header fields are used as the report
+     * metadata and only that scope's findings/bookings/sampling runs are included.
+     *
+     * There is deliberately no unscoped overload: an earlier version read the whole
+     * database with findAll() and therefore exported every tenant's audit data.
      */
-    public ReportContent assemble(Long runId) {
-        ReportRun run = reportService.findRunById(runId);
-
-        List<Finding> findings = findingRepository.findAll();
-        List<Booking> bookings = bookingRepository.findAll();
-        List<SamplingRun> samplingRuns = samplingRunRepository.findAll();
-
-        return new ReportContent(
-                run.getReportName(),
-                run.getTemplateVersion(),
-                run.getGeneratedAt(),
-                run.getTriggeredBy(),
-                run.getParameters(),
-                buildFindingsSummary(findings),
-                buildBookingStats(bookings, findings),
-                buildSamplingRunSummaries(samplingRuns)
-        );
-    }
-
     public ReportContent assemble(Long runId, String tenantId, String projectId) {
         ReportRun run = reportService.findRunById(runId, tenantId, projectId);
         List<Finding> findings = findingRepository.findByBooking_TenantIdAndBooking_ProjectId(tenantId, projectId);

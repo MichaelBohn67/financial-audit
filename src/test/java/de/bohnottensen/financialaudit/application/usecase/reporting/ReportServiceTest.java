@@ -8,6 +8,7 @@ import de.bohnottensen.financialaudit.infrastructure.persistence.ReportTemplateR
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,6 +18,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class ReportServiceTest {
+
+    private static final String TENANT = "TENANT-1";
+    private static final String PROJECT = "PROJECT-1";
 
     private final ReportRunRepository runRepo = mock(ReportRunRepository.class);
     private final ReportTemplateRepository templateRepo = mock(ReportTemplateRepository.class);
@@ -96,7 +100,7 @@ class ReportServiceTest {
             return r;
         });
 
-        ReportRun run = service.startRun("AML-Report", "wirtschaftspruefer", "tenantId=T1");
+        ReportRun run = service.startRun("AML-Report", "wirtschaftspruefer", "tenantId=T1", TENANT, PROJECT);
 
         assertThat(run.getReportName()).isEqualTo("AML-Report");
         assertThat(run.getTemplateVersion()).isEqualTo("1.0.0");
@@ -104,6 +108,8 @@ class ReportServiceTest {
         assertThat(run.getTriggeredBy()).isEqualTo("wirtschaftspruefer");
         assertThat(run.getParameters()).isEqualTo("tenantId=T1");
         assertThat(run.getStatus()).isEqualTo(ReportRunStatus.RUNNING.name());
+        assertThat(run.getTenantId()).isEqualTo(TENANT);
+        assertThat(run.getProjectId()).isEqualTo(PROJECT);
     }
 
     // --- completeRun ---
@@ -167,15 +173,26 @@ class ReportServiceTest {
     }
 
     @Test
-    void shouldFindRunByIdAndFindRunsByTemplate() {
+    void shouldFindRunByIdWithinScopeAndFindRunsByTemplate() {
         ReportRun run = runningRun(12L);
-        when(runRepo.findById(12L)).thenReturn(Optional.of(run));
+        when(runRepo.findByIdAndTenantIdAndProjectId(12L, TENANT, PROJECT)).thenReturn(Optional.of(run));
         when(runRepo.findByReportNameAndTemplateVersionOrderByGeneratedAtDesc("AML-Report", "1.0.0"))
                 .thenReturn(List.of(run));
 
-        assertThat(service.findRunById(12L)).isSameAs(run);
+        assertThat(service.findRunById(12L, TENANT, PROJECT)).isSameAs(run);
         assertThat(service.findRunsByTemplate("AML-Report", "1.0.0"))
                 .containsExactly(run);
+    }
+
+    /**
+     * A run id alone must never resolve to a run in another tenant's scope.
+     */
+    @Test
+    void shouldThrowWhenRunIsOutsideRequestedScope() {
+        when(runRepo.findByIdAndTenantIdAndProjectId(12L, "OTHER-TENANT", PROJECT)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findRunById(12L, "OTHER-TENANT", PROJECT))
+                .isInstanceOf(NoSuchElementException.class);
     }
 
     @Test

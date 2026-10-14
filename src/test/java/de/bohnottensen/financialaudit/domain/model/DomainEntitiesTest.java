@@ -664,6 +664,47 @@ class DomainEntitiesTest {
         setField(wePreset, "uploadedAt", fixedTime);
         wePreset.onCreate();
         assertThat(wePreset.getUploadedAt()).isEqualTo(fixedTime);
+
+        Industriekontenrahmen ikrNull = new Industriekontenrahmen();
+        ikrNull.onCreate();
+        assertThat(ikrNull.getCreatedAt()).isNotNull();
+        ikrNull.onUpdate();
+        assertThat(ikrNull.getUpdatedAt()).isNotNull();
+        Industriekontenrahmen ikrPreset = new Industriekontenrahmen();
+        setField(ikrPreset, "createdAt", fixedTime);
+        ikrPreset.onCreate();
+        assertThat(ikrPreset.getCreatedAt()).isEqualTo(fixedTime);
+    }
+
+    @Test
+    void testIndustriekontenrahmenEntity() {
+        Industriekontenrahmen ikr = new Industriekontenrahmen("0840", "Fuhrpark", 0, "08 BGA", "AKTIV", "Lkw und Pkw");
+        ikr.setId(100L);
+
+        assertThat(ikr.getId()).isEqualTo(100L);
+        assertThat(ikr.getAccountNumber()).isEqualTo("0840");
+        assertThat(ikr.getName()).isEqualTo("Fuhrpark");
+        assertThat(ikr.getAccountClass()).isEqualTo(0);
+        assertThat(ikr.getAccountGroup()).isEqualTo("08 BGA");
+        assertThat(ikr.getAccountType()).isEqualTo("AKTIV");
+        assertThat(ikr.getDescription()).isEqualTo("Lkw und Pkw");
+
+        ikr.setAccountNumber("0860");
+        ikr.setName("Büromöbel");
+        ikr.setAccountClass(0);
+        ikr.setAccountGroup("08 BGA neu");
+        ikr.setAccountType("AKTIV");
+        ikr.setDescription("Büroausstattung");
+        LocalDateTime now = LocalDateTime.now();
+        ikr.setCreatedAt(now);
+        ikr.setUpdatedAt(now);
+
+        assertThat(ikr.getAccountNumber()).isEqualTo("0860");
+        assertThat(ikr.getName()).isEqualTo("Büromöbel");
+        assertThat(ikr.getAccountGroup()).isEqualTo("08 BGA neu");
+        assertThat(ikr.getDescription()).isEqualTo("Büroausstattung");
+        assertThat(ikr.getCreatedAt()).isEqualTo(now);
+        assertThat(ikr.getUpdatedAt()).isEqualTo(now);
     }
 
     private static void setField(Object target, String fieldName, Object value) throws Exception {

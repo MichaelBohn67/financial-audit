@@ -86,30 +86,56 @@
                     <argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/${byte-buddy.version}/byte-buddy-agent-${byte-buddy.version}.jar</argLine>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.pitest</groupId>
-                <artifactId>pitest-maven</artifactId>
-                <version>1.25.9</version>
-                <configuration>
-                    <threads>4</threads>
-                    <timeoutFactor>2.0</timeoutFactor>
-                    <timeoutConstant>5000</timeoutConstant>
-                    <targetClasses>
-                        <param>de.bohnottensen.financialaudit.*</param>
-                    </targetClasses>
-                    <targetTests>
-                        <param>de.bohnottensen.financialaudit.*Test</param>
-                    </targetTests>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.pitest</groupId>
-                        <artifactId>pitest-junit5-plugin</artifactId>
-                        <version>1.2.3</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>pitest</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skipTests>true</skipTests>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <version>1.25.9</version>
+                        <executions>
+                            <execution>
+                                <id>pitest-mutation-coverage</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>mutationCoverage</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <threads>4</threads>
+                            <timeoutFactor>2.0</timeoutFactor>
+                            <timeoutConstant>5000</timeoutConstant>
+                            <targetClasses>
+                                <param>de.bohnottensen.financialaudit.*</param>
+                            </targetClasses>
+                            <targetTests>
+                                <param>de.bohnottensen.financialaudit.*Test</param>
+                            </targetTests>
+                        </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.pitest</groupId>
+                                <artifactId>pitest-junit5-plugin</artifactId>
+                                <version>1.2.3</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

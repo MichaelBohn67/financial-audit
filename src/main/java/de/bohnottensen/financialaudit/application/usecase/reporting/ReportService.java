@@ -62,11 +62,8 @@ public class ReportService {
     /**
      * Start a report run for the currently active template with the given name.
      * The run is created in RUNNING status and persisted immediately for traceability.
+     * tenantId/projectId are mandatory so no run can be created outside a scope.
      */
-    public ReportRun startRun(String templateName, String triggeredBy, String parameters) {
-        return startRun(templateName, triggeredBy, parameters, "LEGACY", "LEGACY");
-    }
-
     public ReportRun startRun(String templateName, String triggeredBy, String parameters,
                               String tenantId, String projectId) {
         ReportTemplate template = findActiveTemplate(templateName);
@@ -104,10 +101,11 @@ public class ReportService {
         return reportRunRepository.save(run);
     }
 
-    public ReportRun findRunById(Long runId) {
-        return reportRunRepository.findById(runId).orElseThrow();
-    }
-
+    /**
+     * Scope-aware lookup. There is deliberately no unscoped overload: every caller must
+     * resolve the run inside a tenant/project scope so a run id alone can never be used
+     * to read another tenant's report.
+     */
     public ReportRun findRunById(Long runId, String tenantId, String projectId) {
         return reportRunRepository.findByIdAndTenantIdAndProjectId(runId, tenantId, projectId).orElseThrow();
     }

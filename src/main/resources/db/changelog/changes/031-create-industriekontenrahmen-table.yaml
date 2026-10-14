@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: 031-create-industriekontenrahmen-table
+      author: financial-audit
+      changes:
+        - createTable:
+            tableName: industriekontenrahmen
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_industriekontenrahmen
+              - column:
+                  name: account_number
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_ikr_account_number
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_class
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_group
+                  type: VARCHAR(100)
+              - column:
+                  name: account_type
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(500)
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME(6)

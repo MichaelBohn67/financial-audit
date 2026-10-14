@@ -19,6 +19,9 @@ import static org.mockito.Mockito.when;
 
 class ReportExportServiceTest {
 
+    private static final String TENANT = "TENANT-1";
+    private static final String PROJECT = "PROJECT-1";
+
     private final FindingRepository findingRepo = mock(FindingRepository.class);
     private final BookingRepository bookingRepo = mock(BookingRepository.class);
     private final SamplingRunRepository samplingRunRepo = mock(SamplingRunRepository.class);
@@ -30,7 +33,7 @@ class ReportExportServiceTest {
     @Test
     void shouldAssembleReportWithFindingsSummaryAndBookingStats() {
         ReportRun run = runningRun(1L, "AML-Report", "1.0.0");
-        when(reportService.findRunById(1L)).thenReturn(run);
+        when(reportService.findRunById(1L, TENANT, PROJECT)).thenReturn(run);
 
         Booking booking1 = booking(10L, new BigDecimal("5000.00"));
         Booking booking2 = booking(11L, new BigDecimal("2500.00"));
@@ -40,11 +43,13 @@ class ReportExportServiceTest {
         Finding finding2 = finding(101L, booking2, "STRUCTURING", "MEDIUM", "ESCALATED");
         Finding finding3 = finding(102L, null, "MISSING_DOC", "LOW", "NEW");
 
-        when(findingRepo.findAll()).thenReturn(List.of(finding1, finding2, finding3));
-        when(bookingRepo.findAll()).thenReturn(List.of(booking1, booking2, bookingNullAmount));
-        when(samplingRunRepo.findAll()).thenReturn(List.of());
+        when(findingRepo.findByBooking_TenantIdAndBooking_ProjectId(TENANT, PROJECT))
+                .thenReturn(List.of(finding1, finding2, finding3));
+        when(bookingRepo.findByTenantIdAndProjectId(TENANT, PROJECT))
+                .thenReturn(List.of(booking1, booking2, bookingNullAmount));
+        when(samplingRunRepo.findByTenantIdAndProjectIdOrderByCreatedAtDesc(TENANT, PROJECT)).thenReturn(List.of());
 
-        ReportContent content = service.assemble(1L);
+        ReportContent content = service.assemble(1L, TENANT, PROJECT);
 
         assertThat(content.reportName()).isEqualTo("AML-Report");
         assertThat(content.templateVersion()).isEqualTo("1.0.0");
@@ -70,9 +75,9 @@ class ReportExportServiceTest {
     @Test
     void shouldIncludeSamplingRunSummaries() {
         ReportRun run = runningRun(2L, "Sampling-Report", "1.0.0");
-        when(reportService.findRunById(2L)).thenReturn(run);
-        when(findingRepo.findAll()).thenReturn(List.of());
-        when(bookingRepo.findAll()).thenReturn(List.of());
+        when(reportService.findRunById(2L, TENANT, PROJECT)).thenReturn(run);
+        when(findingRepo.findByBooking_TenantIdAndBooking_ProjectId(TENANT, PROJECT)).thenReturn(List.of());
+        when(bookingRepo.findByTenantIdAndProjectId(TENANT, PROJECT)).thenReturn(List.of());
 
         SamplingRun sr = new SamplingRun();
         sr.setId(7L);
@@ -81,9 +86,9 @@ class ReportExportServiceTest {
         sr.setSeed(42L);
         sr.setPopulationSize(1000L);
         sr.setSampleSize(50L);
-        when(samplingRunRepo.findAll()).thenReturn(List.of(sr));
+        when(samplingRunRepo.findByTenantIdAndProjectIdOrderByCreatedAtDesc(TENANT, PROJECT)).thenReturn(List.of(sr));
 
-        ReportContent content = service.assemble(2L);
+        ReportContent content = service.assemble(2L, TENANT, PROJECT);
 
         assertThat(content.samplingRuns()).hasSize(1);
         ReportContent.SamplingRunSummary srSummary = content.samplingRuns().get(0);
@@ -96,12 +101,12 @@ class ReportExportServiceTest {
     @Test
     void shouldHandleEmptyDataSetDeterministically() {
         ReportRun run = runningRun(3L, "Empty-Report", "1.0.0");
-        when(reportService.findRunById(3L)).thenReturn(run);
-        when(findingRepo.findAll()).thenReturn(List.of());
-        when(bookingRepo.findAll()).thenReturn(List.of());
-        when(samplingRunRepo.findAll()).thenReturn(List.of());
+        when(reportService.findRunById(3L, TENANT, PROJECT)).thenReturn(run);
+        when(findingRepo.findByBooking_TenantIdAndBooking_ProjectId(TENANT, PROJECT)).thenReturn(List.of());
+        when(bookingRepo.findByTenantIdAndProjectId(TENANT, PROJECT)).thenReturn(List.of());
+        when(samplingRunRepo.findByTenantIdAndProjectIdOrderByCreatedAtDesc(TENANT, PROJECT)).thenReturn(List.of());
 
-        ReportContent content = service.assemble(3L);
+        ReportContent content = service.assemble(3L, TENANT, PROJECT);
 
         assertThat(content.findingsSummary().totalFindings()).isZero();
         assertThat(content.bookingStats().totalAmount()).isEqualByComparingTo(BigDecimal.ZERO);
@@ -111,18 +116,18 @@ class ReportExportServiceTest {
     @Test
     void shouldCountDistinctBookingsWithFindingsCorrectly() {
         ReportRun run = runningRun(4L, "AML-Report", "1.0.0");
-        when(reportService.findRunById(4L)).thenReturn(run);
+        when(reportService.findRunById(4L, TENANT, PROJECT)).thenReturn(run);
 
         Booking booking = booking(20L, new BigDecimal("1000.00"));
         // Two findings on the same booking
         Finding f1 = finding(200L, booking, "HIGH_AMOUNT", "HIGH", "NEW");
         Finding f2 = finding(201L, booking, "STRUCTURING", "MEDIUM", "NEW");
 
-        when(findingRepo.findAll()).thenReturn(List.of(f1, f2));
-        when(bookingRepo.findAll()).thenReturn(List.of(booking));
-        when(samplingRunRepo.findAll()).thenReturn(List.of());
+        when(findingRepo.findByBooking_TenantIdAndBooking_ProjectId(TENANT, PROJECT)).thenReturn(List.of(f1, f2));
+        when(bookingRepo.findByTenantIdAndProjectId(TENANT, PROJECT)).thenReturn(List.of(booking));
+        when(samplingRunRepo.findByTenantIdAndProjectIdOrderByCreatedAtDesc(TENANT, PROJECT)).thenReturn(List.of());
 
-        ReportContent content = service.assemble(4L);
+        ReportContent content = service.assemble(4L, TENANT, PROJECT);
 
         // Two findings but only one distinct booking
         assertThat(content.findingsSummary().totalFindings()).isEqualTo(2);

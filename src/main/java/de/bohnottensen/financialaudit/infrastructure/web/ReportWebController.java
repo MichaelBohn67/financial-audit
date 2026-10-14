@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @RequestMapping("/reports")
@@ -24,10 +25,13 @@ public class ReportWebController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'LEAD_AUDITOR', 'ADMIN')")
-    public String viewReport(@PathVariable Long id, Model model) {
-        ReportRun run = reportService.findRunById(id);
-        ReportContent report = reportExportService.assemble(id);
+    @PreAuthorize("@scopeAccessPolicy.canAccessProject(authentication, #tenantId, #projectId)")
+    public String viewReport(@PathVariable Long id,
+                             @RequestParam String tenantId,
+                             @RequestParam String projectId,
+                             Model model) {
+        ReportRun run = reportService.findRunById(id, tenantId, projectId);
+        ReportContent report = reportExportService.assemble(id, tenantId, projectId);
         model.addAttribute("report", report);
 
         if (run.getReportName() != null && run.getReportName().contains("Management Letter")) {

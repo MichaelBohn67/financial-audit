@@ -49,6 +49,30 @@ Die Profilwerte liegen in `src/main/resources/application-mariadb.properties`.
 mvn test
 ```
 
+## Standard-Admin-Benutzer
+
+Beim Start der Applikation wird automatisch ein Admin-Benutzer angelegt, sofern er noch
+nicht existiert. Benutzername und Passwort müssen über Umgebungsvariablen bereitgestellt
+werden:
+
+```bash
+export FINANCIAL_AUDIT_DEFAULT_ADMIN_USERNAME=admin
+export FINANCIAL_AUDIT_DEFAULT_ADMIN_PASSWORD='<sicheres Passwort>'
+```
+
+Der Startvorgang schlägt fehl, wenn `FINANCIAL_AUDIT_DEFAULT_ADMIN_PASSWORD` nicht gesetzt
+ist oder ein bekanntes Standardpasswort (`admin`, `password`, `changeme`, `changeit`)
+verwendet wird. Damit kann die Anwendung nicht versehentlich mit erratbaren
+Admin-Zugangsdaten betrieben werden.
+
+Ebenfalls erforderlich sind die BCrypt-Hashes der Anmeldebenutzer:
+
+```bash
+export FINANCIAL_AUDIT_AUDITOR_PASSWORD_HASH='<bcrypt-hash>'
+export FINANCIAL_AUDIT_LEAD_AUDITOR_PASSWORD_HASH='<bcrypt-hash>'
+export FINANCIAL_AUDIT_ADMIN_PASSWORD_HASH='<bcrypt-hash>'
+```
+
 ## Datenbankschema
 
 - Liquibase Master-Changelog: `src/main/resources/db/changelog/db.changelog-master.yaml`

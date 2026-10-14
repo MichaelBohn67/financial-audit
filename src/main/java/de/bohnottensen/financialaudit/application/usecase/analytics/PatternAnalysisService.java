@@ -1,12 +1,11 @@
 package de.bohnottensen.financialaudit.application.usecase.analytics;
 
-import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
+import de.bohnottensen.financialaudit.application.usecase.finding.FindingAuditRecorder;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.domain.model.Finding;
 import de.bohnottensen.financialaudit.domain.model.PatternAnalysisIssue;
 import de.bohnottensen.financialaudit.domain.model.PatternAnalysisRun;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BookingRepository;
-import de.bohnottensen.financialaudit.infrastructure.persistence.FindingRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.PatternAnalysisIssueRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.PatternAnalysisRunRepository;
 import org.springframework.stereotype.Service;
@@ -25,21 +24,18 @@ import java.util.UUID;
 public class PatternAnalysisService {
 
     private final BookingRepository bookingRepository;
-    private final FindingRepository findingRepository;
     private final PatternAnalysisRunRepository patternAnalysisRunRepository;
     private final PatternAnalysisIssueRepository patternAnalysisIssueRepository;
-    private final AuditTrailWriter auditTrailWriter;
+    private final FindingAuditRecorder findingAuditRecorder;
 
     public PatternAnalysisService(BookingRepository bookingRepository,
-                                  FindingRepository findingRepository,
                                   PatternAnalysisRunRepository patternAnalysisRunRepository,
                                   PatternAnalysisIssueRepository patternAnalysisIssueRepository,
-                                  AuditTrailWriter auditTrailWriter) {
+                                  FindingAuditRecorder findingAuditRecorder) {
         this.bookingRepository = bookingRepository;
-        this.findingRepository = findingRepository;
         this.patternAnalysisRunRepository = patternAnalysisRunRepository;
         this.patternAnalysisIssueRepository = patternAnalysisIssueRepository;
-        this.auditTrailWriter = auditTrailWriter;
+        this.findingAuditRecorder = findingAuditRecorder;
     }
 
     public PatternAnalysisResult run(String ruleVersion, String runContext) {
@@ -193,26 +189,10 @@ public class PatternAnalysisService {
         finding.setRuleName("PATTERN_" + issue.issueType());
         finding.setAlertDescription(issue.description());
         finding.setRiskLevel(issue.severity());
-        finding.setStatus("NEW");
         finding.setAnalysisRunId(runId);
         finding.setRuleVersion(ruleVersion);
         finding.setRunContext(runContext);
-        Finding savedFinding = findingRepository.save(finding);
-        auditTrailWriter.record(
-                "FINDING",
-                savedFinding.getId(),
-                "FINDING_CREATED",
-                "SYSTEM_PATTERN_ANALYSIS",
-                "Finding created by pattern analysis",
-                null,
-                "bookingId=" + (savedFinding.getBooking() != null ? savedFinding.getBooking().getId() : null)
-                        + ";ruleName=" + savedFinding.getRuleName()
-                        + ";riskLevel=" + savedFinding.getRiskLevel()
-                        + ";status=" + savedFinding.getStatus()
-                        + ";analysisRunId=" + savedFinding.getAnalysisRunId()
-                        + ";ruleVersion=" + savedFinding.getRuleVersion()
-                        + ";runContext=" + savedFinding.getRunContext()
-        );
+        findingAuditRecorder.record(finding, "SYSTEM_PATTERN_ANALYSIS", "Finding created by pattern analysis");
     }
 
     private String patternKey(Booking booking) {

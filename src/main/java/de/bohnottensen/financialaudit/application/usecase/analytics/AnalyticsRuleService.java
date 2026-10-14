@@ -1,10 +1,9 @@
 package de.bohnottensen.financialaudit.application.usecase.analytics;
 
-import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
+import de.bohnottensen.financialaudit.application.usecase.finding.FindingAuditRecorder;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.domain.model.Finding;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BookingRepository;
-import de.bohnottensen.financialaudit.infrastructure.persistence.FindingRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -14,17 +13,14 @@ import java.util.List;
 public class AnalyticsRuleService {
 
     private final BookingRepository bookingRepository;
-    private final FindingRepository findingRepository;
-    private final AuditTrailWriter auditTrailWriter;
     private final List<AnalyticsRule> rules;
+    private final FindingAuditRecorder findingAuditRecorder;
 
     public AnalyticsRuleService(BookingRepository bookingRepository,
-                                FindingRepository findingRepository,
-                                AuditTrailWriter auditTrailWriter,
+                                FindingAuditRecorder findingAuditRecorder,
                                 List<AnalyticsRule> rules) {
         this.bookingRepository = bookingRepository;
-        this.findingRepository = findingRepository;
-        this.auditTrailWriter = auditTrailWriter;
+        this.findingAuditRecorder = findingAuditRecorder;
         this.rules = rules;
     }
 
@@ -39,33 +35,13 @@ public class AnalyticsRuleService {
                 finding.setRuleName(match.ruleName());
                 finding.setAlertDescription(match.alertDescription());
                 finding.setRiskLevel(match.riskLevel());
-                finding.setStatus("NEW");
                 finding.setAnalysisRunId("RULE-" + ruleVersion);
                 finding.setRuleVersion(ruleVersion);
                 finding.setRunContext(runContext);
-                Finding savedFinding = findingRepository.save(finding);
-                auditTrailWriter.record(
-                        "FINDING",
-                        savedFinding.getId(),
-                        "FINDING_CREATED",
-                        "SYSTEM_ANALYTICS",
-                        "Finding created by analytics rule " + match.ruleName(),
-                        null,
-                        findingSnapshot(savedFinding)
-                );
-                findings.add(savedFinding);
+                findings.add(findingAuditRecorder.record(
+                        finding, "SYSTEM_ANALYTICS", "Finding created by analytics rule " + match.ruleName()));
             }
         }
         return findings;
-    }
-
-    private String findingSnapshot(Finding finding) {
-        return "bookingId=" + (finding.getBooking() != null ? finding.getBooking().getId() : null)
-                + ";ruleName=" + finding.getRuleName()
-                + ";riskLevel=" + finding.getRiskLevel()
-                + ";status=" + finding.getStatus()
-                + ";analysisRunId=" + finding.getAnalysisRunId()
-                + ";ruleVersion=" + finding.getRuleVersion()
-                + ";runContext=" + finding.getRunContext();
     }
 }

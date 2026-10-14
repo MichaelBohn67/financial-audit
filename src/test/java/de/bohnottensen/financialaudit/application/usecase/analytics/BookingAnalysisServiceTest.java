@@ -1,6 +1,7 @@
 package de.bohnottensen.financialaudit.application.usecase.analytics;
 
 import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
+import de.bohnottensen.financialaudit.application.usecase.finding.FindingAuditRecorder;
 import de.bohnottensen.financialaudit.domain.model.AmlEngine;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.domain.model.Finding;
@@ -42,7 +43,8 @@ class BookingAnalysisServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new BookingAnalysisService(bookingRepository, findingRepository, amlEngine, auditTrailWriter);
+        service = new BookingAnalysisService(bookingRepository, amlEngine,
+                new FindingAuditRecorder(findingRepository, auditTrailWriter));
     }
 
     @Test

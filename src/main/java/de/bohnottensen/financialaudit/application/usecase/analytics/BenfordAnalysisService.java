@@ -1,6 +1,6 @@
 package de.bohnottensen.financialaudit.application.usecase.analytics;
 
-import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
+import de.bohnottensen.financialaudit.application.usecase.finding.FindingAuditRecorder;
 import de.bohnottensen.financialaudit.domain.model.BenfordAnalysisRun;
 import de.bohnottensen.financialaudit.domain.model.BenfordDigitStat;
 import de.bohnottensen.financialaudit.domain.model.Booking;
@@ -8,7 +8,6 @@ import de.bohnottensen.financialaudit.domain.model.Finding;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BenfordAnalysisRunRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BenfordDigitStatRepository;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BookingRepository;
-import de.bohnottensen.financialaudit.infrastructure.persistence.FindingRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -24,21 +23,18 @@ public class BenfordAnalysisService {
     private static final BigDecimal SUSPICIOUS_DEVIATION_THRESHOLD = new BigDecimal("0.08");
 
     private final BookingRepository bookingRepository;
-    private final FindingRepository findingRepository;
     private final BenfordAnalysisRunRepository benfordAnalysisRunRepository;
     private final BenfordDigitStatRepository benfordDigitStatRepository;
-    private final AuditTrailWriter auditTrailWriter;
+    private final FindingAuditRecorder findingAuditRecorder;
 
     public BenfordAnalysisService(BookingRepository bookingRepository,
-                                  FindingRepository findingRepository,
                                   BenfordAnalysisRunRepository benfordAnalysisRunRepository,
                                   BenfordDigitStatRepository benfordDigitStatRepository,
-                                  AuditTrailWriter auditTrailWriter) {
+                                  FindingAuditRecorder findingAuditRecorder) {
         this.bookingRepository = bookingRepository;
-        this.findingRepository = findingRepository;
         this.benfordAnalysisRunRepository = benfordAnalysisRunRepository;
         this.benfordDigitStatRepository = benfordDigitStatRepository;
-        this.auditTrailWriter = auditTrailWriter;
+        this.findingAuditRecorder = findingAuditRecorder;
     }
 
     public BenfordAnalysisResult run(String ruleVersion, String runContext) {
@@ -155,25 +151,9 @@ public class BenfordAnalysisService {
                 + " expected=" + expectedRatio
                 + " deviation=" + deviation);
         finding.setRiskLevel("MEDIUM");
-        finding.setStatus("NEW");
         finding.setAnalysisRunId(runId);
         finding.setRuleVersion(ruleVersion);
         finding.setRunContext(runContext);
-        Finding savedFinding = findingRepository.save(finding);
-        auditTrailWriter.record(
-                "FINDING",
-                savedFinding.getId(),
-                "FINDING_CREATED",
-                "SYSTEM_BENFORD",
-                "Finding created by Benford analysis",
-                null,
-                "bookingId=" + (savedFinding.getBooking() != null ? savedFinding.getBooking().getId() : null)
-                        + ";ruleName=" + savedFinding.getRuleName()
-                        + ";riskLevel=" + savedFinding.getRiskLevel()
-                        + ";status=" + savedFinding.getStatus()
-                        + ";analysisRunId=" + savedFinding.getAnalysisRunId()
-                        + ";ruleVersion=" + savedFinding.getRuleVersion()
-                        + ";runContext=" + savedFinding.getRunContext()
-        );
+        findingAuditRecorder.record(finding, "SYSTEM_BENFORD", "Finding created by Benford analysis");
     }
 }

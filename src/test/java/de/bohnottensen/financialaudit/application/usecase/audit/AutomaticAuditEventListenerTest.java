@@ -33,7 +33,7 @@ class AutomaticAuditEventListenerTest {
 
     @BeforeEach
     void setUp() {
-        listener = new AutomaticAuditEventListener();
+        listener = new AutomaticAuditEventListener(new AuditEventHasher());
         persistedEntities = new ArrayList<>();
         propertyNames = new String[0];
         session = (EventSource) Proxy.newProxyInstance(
@@ -289,4 +289,30 @@ class AutomaticAuditEventListenerTest {
     static class PlainValue { }
 
     enum TestKind { VALUE }
+
+    /**
+     * Regression guard: the listener used to compute its integrity hash with a private
+     * copy of the algorithm that stringified null fields as "null" instead of "".
+     * The stored hash therefore never matched the one recomputed by
+     * AuditIntegrityService.verify(), so chain verification reported every
+     * insert-created event as tampered.
+     */
+    @Test
+    void shouldStoreIntegrityHashThatPassesChainVerification() {
+        AuditEventHasher hasher = new AuditEventHasher();
+        AuditIntegrityService integrity = new AuditIntegrityService(null, hasher);
+
+        Booking booking = new Booking();
+        booking.setId(77L);
+        propertyNames = new String[]{"description", "amount"};
+        Object[] state = new Object[]{"Invoice 123", new BigDecimal("500.00")};
+
+        listener.onPostInsert(new PostInsertEvent(booking, 77L, state, persister, session));
+
+        AuditEvent recorded = (AuditEvent) persistedEntities.get(0);
+
+        assertThat(recorded.getPreviousValue()).isNull();
+        assertThat(integrity.verify(recorded, "")).isTrue();
+        assertThat(recorded.getIntegrityHash()).isEqualTo(integrity.calculateHash(recorded, ""));
+    }
 }

@@ -1,6 +1,7 @@
 package de.bohnottensen.financialaudit.application.usecase.analytics;
 
 import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
+import de.bohnottensen.financialaudit.application.usecase.finding.FindingAuditRecorder;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.domain.model.Finding;
 import de.bohnottensen.financialaudit.domain.model.PatternAnalysisIssue;
@@ -57,10 +58,9 @@ class PatternAnalysisServiceTest {
 
         PatternAnalysisService service = new PatternAnalysisService(
                 bookingRepository,
-                findingRepository,
                 runRepository,
                 issueRepository,
-                auditTrailWriter
+                new FindingAuditRecorder(findingRepository, auditTrailWriter)
         );
 
         PatternAnalysisResult result = service.run("v1", "task13");
@@ -163,10 +163,9 @@ class PatternAnalysisServiceTest {
 
         PatternAnalysisService service = new PatternAnalysisService(
                 bookingRepository,
-                findingRepository,
                 runRepository,
                 issueRepository,
-                auditTrailWriter
+                new FindingAuditRecorder(findingRepository, auditTrailWriter)
         );
 
         PatternAnalysisResult result = service.run("v1", "clean-test");
@@ -194,10 +193,9 @@ class PatternAnalysisServiceTest {
 
         PatternAnalysisService service = new PatternAnalysisService(
                 bookingRepository,
-                findingRepository,
                 runRepository,
                 issueRepository,
-                auditTrailWriter
+                new FindingAuditRecorder(findingRepository, auditTrailWriter)
         );
 
         PatternAnalysisResult result = service.run("v1", "span-test");
@@ -231,7 +229,8 @@ class PatternAnalysisServiceTest {
         });
 
         PatternAnalysisResult result = new PatternAnalysisService(
-                bookingRepository, findingRepository, runRepository, issueRepository, auditTrailWriter
+                bookingRepository, runRepository, issueRepository,
+                new FindingAuditRecorder(findingRepository, auditTrailWriter)
         ).run("v1", "exact-boundary");
 
         assertThat(result.issueCount()).isEqualTo(1);

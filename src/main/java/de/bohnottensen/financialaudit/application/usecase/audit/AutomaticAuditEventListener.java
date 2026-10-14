@@ -30,6 +30,18 @@ public class AutomaticAuditEventListener implements PostInsertEventListener, Pos
             "MaterialityConfig", "ImportJob", "AuditEngagement", "AuditRisk", "AuditProcedure", "WorkpaperEvidence",
             "Tenant", "AuditProject", "ProjectMembership"));
 
+    /**
+     * Depends on the repository-free {@link AuditEventHasher} rather than on
+     * {@link AuditIntegrityService}. This listener is wired into Hibernate while the
+     * EntityManagerFactory is still being built, so reaching for a JPA repository here
+     * creates the cycle entityManagerFactory -> listener -> repository -> entityManagerFactory.
+     */
+    private final AuditEventHasher hasher;
+
+    public AutomaticAuditEventListener(AuditEventHasher hasher) {
+        this.hasher = hasher;
+    }
+
     @Override
     public void onPostInsert(PostInsertEvent event) {
         if (isAudited(event.getEntity())) {
@@ -88,7 +100,10 @@ public class AutomaticAuditEventListener implements PostInsertEventListener, Pos
         event.setPreviousHash(previousHash);
         event.setRequestId(org.slf4j.MDC.get("requestId"));
         event.setSourceIp(org.slf4j.MDC.get("sourceIp"));
-        event.setIntegrityHash(hash(event, previousHash));
+        // Delegate to the single canonical implementation so that AuditIntegrityService.verify()
+        // recomputes exactly the hash that was stored. A divergent copy here made every
+        // automatic event fail chain verification.
+        event.setIntegrityHash(hasher.calculateHash(event, previousHash));
         session.persist(event);
     }
 
@@ -113,18 +128,6 @@ public class AutomaticAuditEventListener implements PostInsertEventListener, Pos
         } catch (ReflectiveOperationException ignored) {
             return null;
         }
-    }
-
-    private String hash(AuditEvent event, String previousHash) {
-        try {
-            String value = String.join("|", previousHash, event.getEntityType(), String.valueOf(event.getEntityId()),
-                    event.getEventType(), event.getActor(), event.getSummary(), String.valueOf(event.getPreviousValue()),
-                    String.valueOf(event.getCurrentValue()), String.valueOf(event.getOccurredAt()),
-                    event.getRequestId() == null ? "" : event.getRequestId(),
-                    event.getSourceIp() == null ? "" : event.getSourceIp());
-            return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
-                    .digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
-        } catch (Exception e) { throw new IllegalStateException("Unable to calculate audit integrity hash", e); }
     }
 
     private String actor() {

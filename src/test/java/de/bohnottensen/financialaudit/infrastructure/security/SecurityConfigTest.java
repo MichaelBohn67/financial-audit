@@ -18,6 +18,9 @@ class SecurityConfigTest {
     @Autowired
     private InMemoryUserDetailsManager userDetailsService;
 
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     @Test
     void shouldExposeSecurityFilterChain() {
         assertThat(securityFilterChain).isNotNull();
@@ -29,6 +32,17 @@ class SecurityConfigTest {
         assertUser("auditor", "ROLE_AUDITOR");
         assertUser("lead", "ROLE_LEAD_AUDITOR");
         assertUser("admin", "ROLE_ADMIN");
+    }
+
+    /**
+     * The test fixture supplies its own hash via src/test/resources/application.properties.
+     * Production no longer carries an inline default for this property, so a deployment can
+     * never silently start on a published credential.
+     */
+    @Test
+    void shouldAllowAdminLoginWithTestFixtureCredential() {
+        UserDetails admin = userDetailsService.loadUserByUsername("admin");
+        assertThat(passwordEncoder.matches("admin", admin.getPassword())).isTrue();
     }
 
     private void assertUser(String username, String authority) {

@@ -39,3 +39,5 @@ databaseChangeLog:
       file: db/changelog/changes/029-report-archives.yaml
   - include:
       file: db/changelog/changes/030-create-user-table.yaml
+  - include:
+      file: db/changelog/changes/031-create-industriekontenrahmen-table.yaml

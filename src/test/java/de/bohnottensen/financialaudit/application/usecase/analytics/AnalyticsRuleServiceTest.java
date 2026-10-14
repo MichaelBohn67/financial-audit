@@ -1,6 +1,7 @@
 package de.bohnottensen.financialaudit.application.usecase.analytics;
 
 import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
+import de.bohnottensen.financialaudit.application.usecase.finding.FindingAuditRecorder;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.domain.model.Finding;
 import de.bohnottensen.financialaudit.infrastructure.persistence.BookingRepository;
@@ -46,10 +47,10 @@ class AnalyticsRuleServiceTest {
             return finding;
         });
 
+        FindingAuditRecorder recorder = new FindingAuditRecorder(findingRepository, auditTrailWriter);
         AnalyticsRuleService service = new AnalyticsRuleService(
                 bookingRepository,
-                findingRepository,
-                auditTrailWriter,
+                recorder,
                 List.of(
                         new HighAmountThresholdAnalyticsRule(),
                         new TimeWindowAnalyticsRule(),
@@ -114,10 +115,10 @@ class AnalyticsRuleServiceTest {
             return f;
         });
 
+        FindingAuditRecorder recorder = new FindingAuditRecorder(findingRepository, auditTrailWriter);
         AnalyticsRuleService service = new AnalyticsRuleService(
                 bookingRepository,
-                findingRepository,
-                auditTrailWriter,
+                recorder,
                 List.of(customRule)
         );
 

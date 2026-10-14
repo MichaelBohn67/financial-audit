@@ -1,6 +1,7 @@
 package de.bohnottensen.financialaudit.application.usecase.analytics;
 
 import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
+import de.bohnottensen.financialaudit.application.usecase.finding.FindingAuditRecorder;
 import de.bohnottensen.financialaudit.domain.model.BenfordAnalysisRun;
 import de.bohnottensen.financialaudit.domain.model.BenfordDigitStat;
 import de.bohnottensen.financialaudit.domain.model.Booking;
@@ -27,9 +28,9 @@ class BenfordAnalysisServiceTest {
     @Test
     void shouldApplyBenfordEligibilityAndDigitRulesAtBoundaries() {
         BenfordAnalysisService service = new BenfordAnalysisService(
-                mock(BookingRepository.class), mock(FindingRepository.class),
+                mock(BookingRepository.class),
                 mock(BenfordAnalysisRunRepository.class), mock(BenfordDigitStatRepository.class),
-                mock(AuditTrailWriter.class));
+                new FindingAuditRecorder(mock(FindingRepository.class), mock(AuditTrailWriter.class)));
 
         Booking zero = booking(1, "zero", BigDecimal.ZERO);
         Booking one = booking(2, "one", new BigDecimal("100.00"));
@@ -91,10 +92,9 @@ class BenfordAnalysisServiceTest {
 
         BenfordAnalysisService service = new BenfordAnalysisService(
                 bookingRepository,
-                findingRepository,
                 runRepository,
                 statRepository,
-                auditTrailWriter
+                new FindingAuditRecorder(findingRepository, auditTrailWriter)
         );
 
         BenfordAnalysisResult result = service.run("v1", "task12");
@@ -178,10 +178,9 @@ class BenfordAnalysisServiceTest {
 
         BenfordAnalysisService service = new BenfordAnalysisService(
                 bookingRepository,
-                findingRepository,
                 runRepository,
                 statRepository,
-                auditTrailWriter
+                new FindingAuditRecorder(findingRepository, auditTrailWriter)
         );
 
         BenfordAnalysisResult result = service.run("v1", "empty-test");
@@ -229,7 +228,8 @@ class BenfordAnalysisServiceTest {
         });
 
         BenfordAnalysisResult result = new BenfordAnalysisService(
-                bookingRepository, findingRepository, runRepository, statRepository, auditTrailWriter
+                bookingRepository, runRepository, statRepository,
+                new FindingAuditRecorder(findingRepository, auditTrailWriter)
         ).run("digits", "boundary");
 
         assertThat(result.bookingCount()).isEqualTo(9);
@@ -260,7 +260,8 @@ class BenfordAnalysisServiceTest {
 
         // Test with a synthetic service or controlled distribution
         BenfordAnalysisService service = new BenfordAnalysisService(
-                bookingRepository, findingRepository, runRepository, statRepository, auditTrailWriter
+                bookingRepository, runRepository, statRepository,
+                new FindingAuditRecorder(findingRepository, auditTrailWriter)
         );
 
         // Leading digit 1 expected ratio is 0.301030.

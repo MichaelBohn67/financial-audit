@@ -1,6 +1,7 @@
 package de.bohnottensen.financialaudit.application.usecase.materiality;
 
 import de.bohnottensen.financialaudit.application.usecase.audit.AuditTrailWriter;
+import de.bohnottensen.financialaudit.application.usecase.finding.FindingAuditRecorder;
 import de.bohnottensen.financialaudit.domain.model.Booking;
 import de.bohnottensen.financialaudit.domain.model.Finding;
 import de.bohnottensen.financialaudit.domain.model.MaterialityConfig;
@@ -109,7 +110,7 @@ public class MaterialityService {
                 + " materiality threshold");
         finding.setRiskLevel(result.classification().equals("OVERALL") ? "HIGH" :
                 result.classification().equals("PERFORMANCE") ? "MEDIUM" : "LOW");
-        finding.setStatus("NEW");
+        finding.setStatus(FindingAuditRecorder.INITIAL_STATUS);
         finding.setAnalysisRunId("MAT-" + config.getId());
         finding.setRuleVersion("1");
         finding.setRunContext(scope == null ? "ALL" : scope);
@@ -121,8 +122,9 @@ public class MaterialityService {
     }
 
     private String findingSnapshot(Finding finding) {
-        return "bookingId=" + finding.getBooking().getId()
-                + ";materialityConfigId=" + finding.getMaterialityConfig().getId()
+        return "bookingId=" + (finding.getBooking() != null ? finding.getBooking().getId() : null)
+                + ";materialityConfigId=" + (finding.getMaterialityConfig() != null
+                        ? finding.getMaterialityConfig().getId() : null)
                 + ";classification=" + finding.getMaterialityClassification()
                 + ";riskLevel=" + finding.getRiskLevel()
                 + ";status=" + finding.getStatus();

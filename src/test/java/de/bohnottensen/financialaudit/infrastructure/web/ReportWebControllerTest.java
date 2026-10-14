@@ -37,7 +37,7 @@ class ReportWebControllerTest {
     void shouldViewReport() throws Exception {
         ReportRun run = new ReportRun();
         run.setReportName("AML-Report");
-        when(reportService.findRunById(1L)).thenReturn(run);
+        when(reportService.findRunById(1L, "TENANT-1", "PROJECT-1")).thenReturn(run);
 
         ReportContent content = new ReportContent(
                 "AML-Report", "1.0.0", null, "senior", null,
@@ -45,9 +45,9 @@ class ReportWebControllerTest {
                 new ReportContent.BookingStats(0, BigDecimal.ZERO, 0),
                 List.of()
         );
-        when(reportExportService.assemble(1L)).thenReturn(content);
+        when(reportExportService.assemble(1L, "TENANT-1", "PROJECT-1")).thenReturn(content);
 
-        mockMvc.perform(get("/reports/1"))
+        mockMvc.perform(get("/reports/1").param("tenantId", "TENANT-1").param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("report-view"))
                 .andExpect(model().attributeExists("report"))
@@ -59,7 +59,7 @@ class ReportWebControllerTest {
     void shouldViewManagementLetter() throws Exception {
         ReportRun run = new ReportRun();
         run.setReportName("Management Letter 2026");
-        when(reportService.findRunById(2L)).thenReturn(run);
+        when(reportService.findRunById(2L, "TENANT-1", "PROJECT-1")).thenReturn(run);
 
         ReportContent content = new ReportContent(
                 "Management Letter 2026", "1.0.0", null, "lead-auditor", null,
@@ -69,9 +69,9 @@ class ReportWebControllerTest {
                 new ReportContent.BookingStats(100, new BigDecimal("50000.00"), 1),
                 List.of()
         );
-        when(reportExportService.assemble(2L)).thenReturn(content);
+        when(reportExportService.assemble(2L, "TENANT-1", "PROJECT-1")).thenReturn(content);
 
-        mockMvc.perform(get("/reports/2"))
+        mockMvc.perform(get("/reports/2").param("tenantId", "TENANT-1").param("projectId", "PROJECT-1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("management-letter"))
                 .andExpect(model().attributeExists("report"))
@@ -82,7 +82,20 @@ class ReportWebControllerTest {
     @Test
     @WithMockUser(username = "user", roles = "USER")
     void user_shouldNotViewReport() throws Exception {
-        mockMvc.perform(get("/reports/1"))
+        mockMvc.perform(get("/reports/1").param("tenantId", "TENANT-1").param("projectId", "PROJECT-1"))
                 .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Guards the cross-tenant read that the scope check replaces: without
+     * @scopeAccessPolicy an authenticated user could pass any tenant/project pair.
+     * With scope-enforcement disabled the policy grants access to every role, so this
+     * test asserts the endpoint still requires the scope parameters to be present.
+     */
+    @Test
+    @WithMockUser(username = "auditor", roles = "AUDITOR")
+    void shouldRejectRequestWithoutScopeParameters() throws Exception {
+        mockMvc.perform(get("/reports/1"))
+                .andExpect(status().isBadRequest());
     }
 }

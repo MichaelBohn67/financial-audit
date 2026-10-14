@@ -14,6 +14,20 @@ export FINANCIAL_AUDIT_TLS_KEY_ALIAS=financial-audit-pilot
 export FINANCIAL_AUDIT_REPORT_ARCHIVE_DIRECTORY=/secure/pilot/archive
 ```
 
+Zusätzlich sind die Anmelde-Secrets des Pilotbetriebs erforderlich. Ohne sie schlägt der
+Start fehl (Fail-Fast), damit der Pilot nicht mit erratbaren Zugangsdaten läuft:
+
+```bash
+export FINANCIAL_AUDIT_AUDITOR_PASSWORD_HASH='<bcrypt-hash>'
+export FINANCIAL_AUDIT_LEAD_AUDITOR_PASSWORD_HASH='<bcrypt-hash>'
+export FINANCIAL_AUDIT_ADMIN_PASSWORD_HASH='<bcrypt-hash>'
+export FINANCIAL_AUDIT_DEFAULT_ADMIN_USERNAME=admin
+export FINANCIAL_AUDIT_DEFAULT_ADMIN_PASSWORD='<sicheres Passwort>'
+```
+
+Bekannte Standardpassworte (`admin`, `password`, `changeme`, `changeit`) werden abgelehnt.
+Details siehe `README.md`.
+
 ## Ablauf
 
 1. Version und Liquibase-Changelog dokumentieren; Datenbank- und Archivbackup erstellen.
@@ -29,3 +43,6 @@ export FINANCIAL_AUDIT_REPORT_ARCHIVE_DIRECTORY=/secure/pilot/archive
 ## Abbruchkriterien
 
 Cross-Scope-Daten, fehlende Audit-Einträge, ungültige Prüfsumme, unverschlüsseltes Backup, Readiness `DOWN`, unklare Reportzahlen oder ein Testfehler führen zum Abbruch und NO-GO.
+
+Fehlende Anmelde-Secrets sind vorab zu prüfen: startet die Anwendung wegen fehlender `FINANCIAL_AUDIT_*_PASSWORD_HASH`- oder `FINANCIAL_AUDIT_DEFAULT_ADMIN_PASSWORD`-Variablen nicht, ist das ein Konfigurationsfehler und kein fachliches Ergebnis. Erst nach korrekter Bereitstellung darf der Ablauf beginnen.
+

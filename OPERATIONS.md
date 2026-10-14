@@ -1,5 +1,23 @@
 # Betriebs-, Datenschutz- und Notfallkonzept
 
+## Startvoraussetzungen
+
+Die Anwendung startet nur, wenn alle Anmelde-Secrets aus dem Secret-Management
+bereitgestellt werden. Es gibt bewusst keine Vorgabewerte im Repository; ein fehlender Wert
+führt zu einem Startabbruch (Fail-Fast) statt zu einem Start mit erratbaren Zugangsdaten:
+
+```bash
+export FINANCIAL_AUDIT_AUDITOR_PASSWORD_HASH='<bcrypt-hash>'
+export FINANCIAL_AUDIT_LEAD_AUDITOR_PASSWORD_HASH='<bcrypt-hash>'
+export FINANCIAL_AUDIT_ADMIN_PASSWORD_HASH='<bcrypt-hash>'
+export FINANCIAL_AUDIT_DEFAULT_ADMIN_PASSWORD='<sicheres Passwort>'
+```
+
+Bekannte Standardpassworte für den initialen Admin-Account (`admin`, `password`,
+`changeme`, `changeit`) werden abgelehnt. Ein Startabbruch mit
+`Could not resolve placeholder` bzw. `must be set to a non-empty value` ist ein
+Konfigurationsfehler und als solcher zu beheben, nicht als Anwendungsfehler zu behandeln.
+
 ## Datenschutz
 
 - Es werden nur für Prüfung, Nachweisführung und gesetzliche Aufbewahrung erforderliche Daten verarbeitet.
